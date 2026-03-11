@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title }}</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f7f8fb;color:#1e2330;margin:0}
+    .wrap{max-width:1200px;margin:0 auto;padding:24px}
+    h1,h2,h3{color:#111827}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:14px 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{border:1px solid #e5e7eb;padding:8px;text-align:left}
+    th{background:#f3f4f6}
+    figure{margin:12px 0}
+    img{max-width:100%;border:1px solid #d1d5db;border-radius:8px;background:#fff}
+    figcaption{font-size:13px;color:#374151;margin-top:6px}
+    .small{font-size:13px;color:#4b5563}
+    .kpi{font-size:26px;font-weight:700}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>{{ title }}</h1>
+  <div class="card">
+    <h2>Executive Summary</h2>
+    <p>{{ executive_summary }}</p>
+    <div class="grid">
+      <div><div class="small">Total benchmark runs</div><div class="kpi">{{ total_runs }}</div></div>
+      <div><div class="small">Methods compared</div><div class="kpi">{{ method_count }}</div></div>
+      <div><div class="small">Best median-latency method</div><div class="kpi">{{ best_latency_method }}</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Experiment Overview</h2>
+    <p>Dimensions varied: method, scale, security mode, and repeated trial index with deterministic seeds.</p>
+    <table>
+      <thead><tr><th>Method</th><th>Scale</th><th>Security</th><th>Runs</th></tr></thead>
+      <tbody>{{ scenario_rows_html }}</tbody>
+    </table>
+  </div>
+
+  {% for section in sections %}
+  <div class="card">
+    <h2>{{ section.title }}</h2>
+    <p>{{ section.text }}</p>
+    {% for ch in section.charts %}
+    <figure>
+      <img src="{{ ch.path }}" alt="{{ ch.title }}"/>
+      <figcaption><strong>{{ ch.title }}.</strong> {{ ch.caption }} <em>How to read:</em> {{ ch.how_to_read }} <em>Pattern:</em> {{ ch.pattern }} <em>Why it matters:</em> {{ ch.why }}</figcaption>
+    </figure>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+  <div class="card">
+    <h2>Limitations</h2>
+    <ul>
+      {% for item in limitations %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Reproducibility and Provenance</h2>
+    <p>Git commit: <code>{{ git_commit }}</code></p>
+    <p>Environment metadata: <code>results/environment/system_info.json</code>, <code>results/environment/package_versions.txt</code></p>
+    <p>Figure/Table provenance map: <code>results/figure_table_provenance.json</code></p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,6 @@
+ablations:
+  reasoning: [true, false]
+  cache: [true, false]
+  translation: [direct, enriched]
+  sync: [true, false]
+  batching: [true, false]
