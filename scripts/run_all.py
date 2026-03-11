@@ -53,7 +53,9 @@ def run_all(repetitions=5):
             "results/aggregated/posthoc.csv",
             "results/aggregated/effect_sizes.csv",
             "results/final_report.md",
+            "results/final_report.html",
         ],
+        "figures": sorted([str(x) for x in (root / "figures").glob("figure_*.png")]),
     }
     (root / "manifest.json").write_text(json.dumps(manifest, indent=2))
 
