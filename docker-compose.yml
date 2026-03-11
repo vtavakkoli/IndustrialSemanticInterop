@@ -1,0 +1,7 @@
+services:
+  benchmark:
+    build: .
+    image: industrial-semantic-interop-benchmark
+    command: python -m scripts.run_all
+    volumes:
+      - ./results:/app/results
