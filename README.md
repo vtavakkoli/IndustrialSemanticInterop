@@ -69,3 +69,9 @@ Malformed run artifacts cause aggregation failure (fail-loud), preventing silent
 - Network counters are host-level approximations (`/proc/net/dev`) and can include unrelated traffic.
 - Fault model is controlled synthetic injection and does not emulate all hardware faults.
 - Statistical stage currently uses conservative proxy logic in dependency-minimal mode.
+
+## Attribution
+Writen by Dr. Vahid Tavakkoli 2026
+
+## License
+This project is licensed under the MIT License. See `LICENSE`.
