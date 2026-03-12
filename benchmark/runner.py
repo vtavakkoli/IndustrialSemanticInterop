@@ -20,7 +20,7 @@ LOGGER = logging.getLogger("benchmark.runner")
 
 def execute_once(scenario, run_index: int, seed: int, synthetic_mode: bool = False) -> BenchmarkResult:
     rng = random.Random(seed)
-    stage_latency: dict[str, float] = {}
+    stage_latency_samples: dict[str, list[float]] = {}
 
     startup_t0 = time.perf_counter()
     source, mapping_engine, target = build_pipeline(scenario.method)
@@ -32,11 +32,13 @@ def execute_once(scenario, run_index: int, seed: int, synthetic_mode: bool = Fal
     expected = scenario.expected_output
     messages = scenario.benchmark_parameters["messages"]
     t0 = time.perf_counter()
+    per_message_latencies: list[float] = []
 
     for _ in range(messages):
         source_payload = dict(scenario.payload)
         source_payload["measurement"] = scenario.payload["measurement"] + (rng.random() * 0.0001)
 
+        stage_latency: dict[str, float] = {}
         with stage_timer("load_source", stage_latency):
             loaded = source.load_source(source_payload)
         with stage_timer("normalize_message", stage_latency):
@@ -52,6 +54,10 @@ def execute_once(scenario, run_index: int, seed: int, synthetic_mode: bool = Fal
         with stage_timer("send_to_target", stage_latency):
             sent = target.send_to_target(translated)
 
+        for key, value in stage_latency.items():
+            stage_latency_samples.setdefault(key, []).append(value)
+        per_message_latencies.append(sum(stage_latency.values()))
+
         if not synthetic_mode:
             success += 1
             if target.validate_roundtrip(sent, expected):
@@ -59,6 +65,23 @@ def execute_once(scenario, run_index: int, seed: int, synthetic_mode: bool = Fal
 
     duration = max(time.perf_counter() - t0, 1e-9)
     after = read_resource_snapshot()
+
+    mean_latency = (sum(per_message_latencies) / len(per_message_latencies)) if per_message_latencies else 0.0
+    sorted_lats = sorted(per_message_latencies)
+
+    def _pct(p: float) -> float:
+        if not sorted_lats:
+            return 0.0
+        idx = int((len(sorted_lats) - 1) * p)
+        return float(sorted_lats[idx])
+
+    stage_latency_means = {
+        key: (sum(values) / len(values) if values else 0.0)
+        for key, values in stage_latency_samples.items()
+    }
+    security_mode = scenario.benchmark_parameters.get("security_mode", "none")
+    scale = scenario.benchmark_parameters.get("scale", "scenario")
+    failure_rate = 1.0 - (success / messages if messages else 0.0)
 
     return BenchmarkResult(
         scenario_id=scenario.scenario_id,
@@ -76,12 +99,22 @@ def execute_once(scenario, run_index: int, seed: int, synthetic_mode: bool = Fal
         payload_bytes=float(len(json.dumps(scenario.payload))),
         cpu_time_sec=max(after.cpu_time_sec - before.cpu_time_sec, 0.0),
         memory_mb_max=max(after.max_rss_mb, before.max_rss_mb),
-        stage_latency_ms=stage_latency,
+        scale=scale,
+        security=security_mode,
+        latency_mean_ms=mean_latency,
+        latency_p50_ms=_pct(0.50),
+        latency_p95_ms=_pct(0.95),
+        latency_p99_ms=_pct(0.99),
+        error_rate=1.0 - (validations / messages if messages else 0.0),
+        failure_rate=failure_rate,
+        cpu_percent_avg=0.0,
+        memory_mb_avg=max(after.max_rss_mb, before.max_rss_mb),
+        stage_latency_ms=stage_latency_means,
         metadata={
             "source_protocol": scenario.source_protocol,
             "target_protocol": scenario.target_protocol,
             "description": scenario.description,
-            "security": scenario.benchmark_parameters.get("security_mode", "none"),
+            "security": security_mode,
             "estimated_metrics": {},
         },
     )
@@ -127,6 +160,8 @@ def run_benchmarks(output_dir: str = "results/raw_runs", repetitions: int = 20, 
             fieldnames=[
                 "scenario_id",
                 "method",
+                "scale",
+                "security",
                 "run_index",
                 "seed",
                 "measured",
@@ -135,6 +170,12 @@ def run_benchmarks(output_dir: str = "results/raw_runs", repetitions: int = 20, 
                 "validation_pass_rate",
                 "throughput_msg_per_sec",
                 "end_to_end_latency_ms",
+                "latency_mean_ms",
+                "latency_p50_ms",
+                "latency_p95_ms",
+                "latency_p99_ms",
+                "error_rate",
+                "failure_rate",
                 "startup_overhead_ms",
                 "payload_bytes",
                 "cpu_time_sec",

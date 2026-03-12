@@ -23,6 +23,11 @@ def _scenario_table_rows(summary_rows):
 
 
 
+
+
+def _safe_mean(values, default=0.0):
+    return mean(values) if values else default
+
 def _report_src(path: str) -> str:
     return path.replace("results/", "", 1) if path.startswith("results/") else path
 
@@ -48,14 +53,14 @@ def generate_report(results_root='results'):
 
     scale_msg = []
     for m in methods:
-        small = mean(by_method_scale[(m, 'small')])
-        large = mean(by_method_scale[(m, 'large')])
+        small = _safe_mean(by_method_scale[(m, 'small')])
+        large = _safe_mean(by_method_scale[(m, 'large')], small)
         scale_msg.append(f"{m}: {small:.4f}→{large:.4f} ms")
 
     sec_msg = []
     for m in methods:
-        none = mean(by_method_security[(m, 'none')])
-        full = mean(by_method_security[(m, 'full')])
+        none = _safe_mean(by_method_security[(m, 'none')])
+        full = _safe_mean(by_method_security[(m, 'full')], none)
         delta = ((full - none) / none * 100.0) if none else 0.0
         sec_msg.append(f"{m}: {delta:.2f}% throughput change under full security")
 

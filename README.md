@@ -12,6 +12,7 @@ This repository provides a **reproducible interoperability benchmarking framewor
 - Canonical intermediate message model used by semantic and bridge paths.
 - Explicit JSON scenarios with expected outputs and validation criteria.
 - Structured metrics and descriptive-statistics analysis pipeline.
+- Comprehensive publication-style HTML report generation with full figure set (`figure_01`..`figure_18`).
 
 ## Scope honesty
 This is a **prototype framework** with **representative adapters**. It does not claim full standard compliance with IEEE 1451, IEC 61499, or OPC UA stacks.
@@ -34,36 +35,35 @@ python -m scripts.run_framework --repetitions 20 --seed 4242
 docker compose up --build
 ```
 
-The Docker run executes the same pipeline and streams progress lines to stdout such as:
+The Docker run executes the full pipeline and streams progress lines to stdout such as:
 - `[framework] starting benchmark run ...`
 - `[benchmark] run 4/100 (4.0%) complete ...`
+- `[framework] generating comprehensive final_report.html`
 - `[framework] pipeline completed successfully`
 
 ## Outputs
 Generated under `results/`:
 - `raw_runs/*.json`
 - `aggregated/runs.csv`
-- `aggregated/summary.json`
+- `aggregated/summary.json` and `aggregated/summary.csv`
 - `aggregated/descriptive_stats.json`
-- `figures/latency_summary.svg`
+- `figures/figure_01_*.png` ... `figures/figure_18_*.png`
 - `final_report.md`
+- `final_report.html` (comprehensive, with figures embedded)
+- `figure_table_provenance.json`
 
 ## Minimal reproducible benchmark command
 ```bash
 python -m benchmark.runner --repetitions 20 --base-seed 4242
 ```
 
-## Generate paper-ready figures/tables
+## Optional modes
 ```bash
-python -m analysis.aggregate
-python -m analysis.statistics
-python -m analysis.plots
-python -m analysis.report
-```
+# Skip modular single-plot stage only
+python -m scripts.run_framework --skip-plots
 
-## Optional non-plot run (for constrained environments)
-```bash
-python -m scripts.run_framework --repetitions 20 --seed 4242 --skip-plots
+# Skip comprehensive HTML+18-figure stage
+python -m scripts.run_framework --skip-comprehensive-report
 ```
 
 ## Deprecated legacy benchmark path

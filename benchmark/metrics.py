@@ -23,6 +23,17 @@ class BenchmarkResult:
     payload_bytes: float
     cpu_time_sec: float
     memory_mb_max: float
+    # legacy-compatible fields for comprehensive analysis modules
+    scale: str
+    security: str
+    latency_mean_ms: float
+    latency_p50_ms: float
+    latency_p95_ms: float
+    latency_p99_ms: float
+    error_rate: float
+    failure_rate: float
+    cpu_percent_avg: float
+    memory_mb_avg: float
     stage_latency_ms: dict[str, float] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
