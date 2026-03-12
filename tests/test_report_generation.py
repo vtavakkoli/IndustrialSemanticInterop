@@ -8,3 +8,5 @@ def test_report_generation(tmp_path, monkeypatch):
     assert "<h1>Industrial Semantic Interoperability Benchmark Report</h1>" in html
     assert "<pre>" not in html
     assert "figure_01_experiment_matrix.png" in html
+    assert "Method-to-Method Comparative Analysis" in html
+    assert "compared_to" in html
