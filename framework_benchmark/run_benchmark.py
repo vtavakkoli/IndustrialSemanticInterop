@@ -12,24 +12,38 @@ from .runner import run_campaign, summarize_records, write_records
 from .scenarios.definitions import SCENARIO_FLAGS
 
 
+def _log(msg: str) -> None:
+    print(msg, flush=True)
+
+
 def cmd_run(args) -> None:
+    _log(f"[framework_benchmark] loading config: {args.config}")
     cfg = load_config(args.config)
-    records = run_campaign(cfg)
-    write_records(records, cfg["results"]["raw_dir"])
+    _log("[framework_benchmark] running campaign")
+    records = run_campaign(cfg, progress=_log)
+    write_records(records, cfg["results"]["raw_dir"], progress=_log)
     Path(cfg["results"]["aggregated_dir"]).mkdir(parents=True, exist_ok=True)
-    (Path(cfg["results"]["aggregated_dir"]) / "adaptive_summary.json").write_text(
-        json.dumps(summarize_records(records), indent=2), encoding="utf-8"
-    )
+    summary_path = Path(cfg["results"]["aggregated_dir"]) / "adaptive_summary.json"
+    summary_path.write_text(json.dumps(summarize_records(records), indent=2), encoding="utf-8")
+    _log(f"[framework_benchmark] wrote adaptive summary: {summary_path}")
+
+    _log("[framework_benchmark] aggregating raw runs")
     aggregate(cfg["results"]["raw_dir"], cfg["results"]["aggregated_dir"])
+
+    _log("[framework_benchmark] generating report")
     generate_report("results")
+    _log("[framework_benchmark] run command completed")
 
 
 def cmd_report(args) -> None:
+    _log(f"[framework_benchmark] report command start (input={args.input})")
     if args.input:
         aggregate(args.input, "results/aggregated")
     generate_report("results")
     if args.output and args.output != "results/final_report.html":
         Path(args.output).write_text(Path("results/final_report.html").read_text(encoding="utf-8"), encoding="utf-8")
+        _log(f"[framework_benchmark] copied report to: {args.output}")
+    _log("[framework_benchmark] report command completed")
 
 
 def cmd_scenarios(args) -> None:
@@ -39,6 +53,7 @@ def cmd_scenarios(args) -> None:
 
 
 def cmd_validate(args) -> None:
+    _log(f"[framework_benchmark] validating config: {args.config}")
     cfg = load_config(args.config)
     required = ["strategies", "scales", "security_modes", "repetitions", "seed"]
     for key in required:

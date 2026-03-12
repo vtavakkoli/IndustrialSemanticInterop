@@ -6,7 +6,7 @@ import time
 from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from .policies.selector import StrategySelector
 from .scenarios.definitions import Scenario, build_scenarios
@@ -25,6 +25,9 @@ FAULT_PENALTIES = {
     "secure_and_semantic": (0.22, 1.3),
     "multi_constraint_mixed": (0.27, 1.8),
 }
+
+
+ProgressCallback = Callable[[str], None]
 
 
 def _simulate_strategy(strategy: str, scenario: Scenario, rng: random.Random) -> StrategyResult:
@@ -102,7 +105,7 @@ def _execute_adaptive(scenario: Scenario, policy: str, selector: StrategySelecto
     }
 
 
-def run_campaign(config: dict[str, Any]) -> list[dict[str, Any]]:
+def run_campaign(config: dict[str, Any], progress: ProgressCallback | None = None) -> list[dict[str, Any]]:
     seed = int(config["seed"])
     repetitions = int(config["repetitions"])
     scenarios = build_scenarios(config["scales"], config["security_modes"], config.get("scenario_flags", ["none"]))
@@ -110,8 +113,21 @@ def run_campaign(config: dict[str, Any]) -> list[dict[str, Any]]:
     policies = config.get("policies", ["balanced"])
     selector = StrategySelector()
 
+    total_runs = len(scenarios) * repetitions * len(strategies)
+    completed = 0
+    if progress:
+        progress(
+            f"[framework_benchmark] campaign start: scenarios={len(scenarios)} strategies={len(strategies)} "
+            f"repetitions={repetitions} total_runs={total_runs}"
+        )
+
     records: list[dict[str, Any]] = []
-    for scenario in scenarios:
+    for scenario_idx, scenario in enumerate(scenarios, start=1):
+        if progress:
+            progress(
+                f"[framework_benchmark] scenario {scenario_idx}/{len(scenarios)}: "
+                f"id={scenario.scenario_id} security={scenario.security_mode} fault={scenario.fault_mode}"
+            )
         for run_index in range(repetitions):
             for strategy in strategies:
                 rng = random.Random(seed + run_index + hash((scenario.scenario_id, strategy)) % 10000)
@@ -172,14 +188,25 @@ def run_campaign(config: dict[str, Any]) -> list[dict[str, Any]]:
                     }
                 )
                 records.append(rec)
+                completed += 1
+                if progress and (completed % max(total_runs // 20, 1) == 0 or completed == total_runs):
+                    progress(f"[framework_benchmark] progress: {completed}/{total_runs} ({(completed / total_runs) * 100:.1f}%)")
+
+    if progress:
+        progress(f"[framework_benchmark] campaign complete: produced_records={len(records)}")
     return records
 
 
-def write_records(records: list[dict[str, Any]], raw_dir: str) -> None:
+def write_records(records: list[dict[str, Any]], raw_dir: str, progress: ProgressCallback | None = None) -> None:
     out = Path(raw_dir)
     out.mkdir(parents=True, exist_ok=True)
+    total = len(records)
+    if progress:
+        progress(f"[framework_benchmark] writing run artifacts to {raw_dir} (count={total})")
     for i, rec in enumerate(records):
         (out / f"campaign_{i:06d}.json").write_text(json.dumps(rec, indent=2), encoding="utf-8")
+    if progress:
+        progress(f"[framework_benchmark] write complete: {total} files")
 
 
 def summarize_records(records: list[dict[str, Any]]) -> dict[str, Any]:
