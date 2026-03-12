@@ -1,71 +1,88 @@
-# Modular Interoperability Benchmarking Framework (Prototype)
+# Comparative Benchmarking Framework for Representative IEEE 1451–IEC 61499 Interoperability Strategies
 
-This repository provides a **reproducible interoperability benchmarking framework** for industrial data exchange pipelines.
+This repository provides a **reproducible virtualized benchmark** for standards-informed, representative interoperability strategies between IEEE 1451-style and IEC 61499-style data flows.
 
-## What is implemented
-- Modular benchmark engine with reproducible seeds and scenario-driven execution.
-- Pluggable protocol adapter interface (`ProtocolAdapter`) with representative adapters:
-  - `ieee1451_style` (source/TEDS-like metadata path)
-  - `iec61499_style` (function-block exchange payload path)
-  - `opcua_bridge` (OPC UA node-write exchange payload path)
-  - `hybrid_pipeline` (OPC UA + IEC 61499 representative chain)
-- Canonical intermediate message model used by semantic and bridge paths.
-- Explicit JSON scenarios with expected outputs and validation criteria.
-- Structured metrics and descriptive-statistics analysis pipeline.
-- Automatic full method×scale×security matrix expansion for every base scenario template.
-- Comprehensive publication-style HTML report generation with full figure set (`figure_01`..`figure_18`).
+## Project Purpose
 
-## Scope honesty
-This is a **prototype framework** with **representative adapters**. It does not claim full standard compliance with IEEE 1451, IEC 61499, or OPC UA stacks.
+This artifact supports comparative benchmarking under controlled scenario-based evaluation, including:
+- baseline performance,
+- robustness and fault tolerance,
+- mixed requirement suitability,
+- adaptive strategy selection behavior.
 
-See:
-- `docs/protocol_scope.md`
-- `docs/limitations.md`
-- `docs/paper_claim_boundary.md`
+## Supported Strategies
 
-## Quickstart (local Python)
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m scripts.run_framework --repetitions 100 --seed 4242
-```
+- `ontology_based`
+- `direct_translation`
+- `soa`
+- `opcua_mediated`
+- `adaptive_selection`
 
-## Quickstart (Docker)
+Legacy method labels and benchmark scripts remain available for backward compatibility.
+
+## Adaptive Selection Concept
+
+`adaptive_selection` is a rule-based policy layer that selects a base strategy according to scenario features (latency sensitivity, semantic complexity, security level, interoperability breadth, fault mode, resource constraints) and supports fallback when an initial choice fails.
+
+See `docs/adaptive_selection.md`.
+
+## Execution Modes
+
+### Docker mode
 ```bash
 docker compose up --build
 ```
 
-The Docker run executes the full pipeline and streams progress lines to stdout such as:
-- `[framework] starting benchmark run ...`
-- `[benchmark] run 400/24000 (1.7%) complete ...`
-- `[framework] generating comprehensive final_report.html`
-- `[framework] pipeline completed successfully`
-
-## Outputs
-Generated under `results/`:
-- `raw_runs/*.json`
-- `aggregated/runs.csv`
-- `aggregated/summary.json` and `aggregated/summary.csv`
-- `aggregated/descriptive_stats.json`
-- `figures/figure_01_*.png` ... `figures/figure_18_*.png`
-- `final_report.md`
-- `final_report.html` (comprehensive, with figures embedded)
-- `figure_table_provenance.json`
-
-## Minimal reproducible benchmark command
+### Native Python mode
 ```bash
-python -m benchmark.runner --repetitions 100 --base-seed 4242
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m framework_benchmark run --config configs/default.yaml
+python -m framework_benchmark report --input results/raw_runs --output results/final_report.html
 ```
 
-## Optional modes
-```bash
-# Skip modular single-plot stage only
-python -m scripts.run_framework --skip-plots
+## Unified CLI
 
-# Skip comprehensive HTML+18-figure stage
-python -m scripts.run_framework --skip-comprehensive-report
-```
+- Run benchmark: `python -m framework_benchmark run --config configs/default.yaml`
+- Generate report: `python -m framework_benchmark report --input results/raw_runs`
+- List scenario flags: `python -m framework_benchmark scenarios`
+- Validate config: `python -m framework_benchmark validate --config configs/default.yaml`
 
-## Deprecated legacy benchmark path
-The older synthetic harness in `benchmarks/` remains for backward compatibility but is not the recommended evidence path for publication claims.
+## Config Files
+
+- `configs/default.yaml`
+- `configs/adaptive_faults.yaml`
+- `configs/minimal.yaml`
+
+Configurable settings include strategies, policies, scales, security modes, scenario flags, repetitions, seeds, and output paths.
+
+## Report Generation
+
+The report pipeline extends `results/final_report.html` with publication-oriented sections:
+- Executive summary,
+- benchmark configuration summary,
+- adaptive selection analysis,
+- robustness/fault analysis,
+- trade-off tables,
+- statistical summary,
+- limitations,
+- reproducibility metadata,
+- figure placeholders.
+
+## Limitations
+
+This repository does **not** claim full IEEE 1451 or IEC 61499 conformance testing. It implements representative strategy behavior in a virtualized environment.
+
+## Reproducibility Guidance
+
+- Use fixed seed configs (`configs/*.yaml`).
+- Keep raw JSON outputs under `results/raw_runs`.
+- Track environment metadata (`results/environment/*`).
+- Capture git commit hash in generated artifacts.
+
+More details in:
+- `docs/scenarios.md`
+- `docs/reporting.md`
+- `docs/reproducibility.md`
+- `docs/limitations.md`
