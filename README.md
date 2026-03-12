@@ -1,82 +1,70 @@
-# Industrial Semantic Interoperability — Reproducible Benchmark Framework
+# Modular Interoperability Benchmarking Framework (Prototype)
 
-This repository now produces a complete, publication-ready benchmark package under `results/` from a single command.
+This repository provides a **reproducible interoperability benchmarking framework** for industrial data exchange pipelines.
 
-## Full end-to-end run (Docker)
+## What is implemented
+- Modular benchmark engine with reproducible seeds and scenario-driven execution.
+- Pluggable protocol adapter interface (`ProtocolAdapter`) with representative adapters:
+  - `ieee1451_style` (source/TEDS-like metadata path)
+  - `iec61499_style` (function-block exchange payload path)
+  - `opcua_bridge` (OPC UA node-write exchange payload path)
+  - `hybrid_pipeline` (OPC UA + IEC 61499 representative chain)
+- Canonical intermediate message model used by semantic and bridge paths.
+- Explicit JSON scenarios with expected outputs and validation criteria.
+- Structured metrics and descriptive-statistics analysis pipeline.
+
+## Scope honesty
+This is a **prototype framework** with **representative adapters**. It does not claim full standard compliance with IEEE 1451, IEC 61499, or OPC UA stacks.
+
+See:
+- `docs/protocol_scope.md`
+- `docs/limitations.md`
+- `docs/paper_claim_boundary.md`
+
+## Quickstart (local Python)
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m scripts.run_framework --repetitions 20 --seed 4242
+```
+
+## Quickstart (Docker)
 ```bash
 docker compose up --build
 ```
-The container runs `python -m scripts.run_all` and writes all outputs to `results/` on the host.
 
-## Full end-to-end run (Python-native)
+The Docker run executes the same pipeline and streams progress lines to stdout such as:
+- `[framework] starting benchmark run ...`
+- `[benchmark] run 4/100 (4.0%) complete ...`
+- `[framework] pipeline completed successfully`
+
+## Outputs
+Generated under `results/`:
+- `raw_runs/*.json`
+- `aggregated/runs.csv`
+- `aggregated/summary.json`
+- `aggregated/descriptive_stats.json`
+- `figures/latency_summary.svg`
+- `final_report.md`
+
+## Minimal reproducible benchmark command
 ```bash
-python -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python -m scripts.run_all
+python -m benchmark.runner --repetitions 20 --base-seed 4242
 ```
 
-## Output package
-```
-results/
-  raw_runs/
-  aggregated/
-  ablations/
-  robustness/
-  figures/
-  environment/
-  manifest.json
-  figure_table_provenance.json
-  final_report.html
-  final_report.md
-```
-
-## What is generated automatically
-- Full scenario matrix benchmark runs with repetitions.
-- Ablation experiments.
-- Robustness/fault-injection experiments.
-- Aggregated tables (`summary`, `confidence_intervals`, `stat_tests`, `posthoc`, `effect_sizes`).
-- 18 benchmark figures:
-  - `figure_01_experiment_matrix.png`
-  - `figure_02_latency_distribution.png`
-  - `figure_03_latency_p95_comparison.png`
-  - `figure_04_throughput_comparison.png`
-  - `figure_05_throughput_vs_scale.png`
-  - `figure_06_scalability_latency.png`
-  - `figure_07_scalability_resources.png`
-  - `figure_08_security_latency_overhead.png`
-  - `figure_09_security_throughput_overhead.png`
-  - `figure_10_cpu_usage.png`
-  - `figure_11_memory_usage.png`
-  - `figure_12_ablation_impact_latency.png`
-  - `figure_13_ablation_impact_throughput.png`
-  - `figure_14_robustness_degradation.png`
-  - `figure_15_recovery_success.png`
-  - `figure_16_confidence_intervals.png`
-  - `figure_17_effect_sizes.png`
-  - `figure_18_pareto_tradeoff.png`
-- Structured HTML report with chart explanations and reproducibility metadata.
-
-## Run only one stage
+## Generate paper-ready figures/tables
 ```bash
-python -m benchmarks.benchmark_runner --repetitions 3 --output results/raw_runs
+python -m analysis.aggregate
+python -m analysis.statistics
+python -m analysis.plots
+python -m analysis.report
 ```
 
-## Failed run handling
-Malformed run artifacts cause aggregation failure (fail-loud), preventing silent bias.
+## Optional non-plot run (for constrained environments)
+```bash
+python -m scripts.run_framework --repetitions 20 --seed 4242 --skip-plots
+```
 
-## Known limitations
-- Network counters are host-level approximations (`/proc/net/dev`) and can include unrelated traffic.
-- Fault model is controlled synthetic injection and does not emulate all hardware faults.
-- Statistical stage currently uses conservative proxy logic in dependency-minimal mode.
-
-## Attribution
-Writen by Dr. Vahid Tavakkoli 2026
-
-## License
-This project is licensed under the MIT License. See `LICENSE`.
-
-## Plot text rendering
-All charts are rendered with Matplotlib (headless `Agg` backend) and a centrally configured sans-serif font stack (`DejaVu Sans` first) to ensure readable titles, axis labels, ticks, legends, and annotations in Docker and local execution.
-A font validation artifact is written to `results/figures/font_validation.json`.
-
+## Deprecated legacy benchmark path
+The older synthetic harness in `benchmarks/` remains for backward compatibility but is not the recommended evidence path for publication claims.

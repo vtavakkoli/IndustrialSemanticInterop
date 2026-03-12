@@ -2,6 +2,8 @@ services:
   benchmark:
     build: .
     image: industrial-semantic-interop-benchmark
-    command: python -m scripts.run_all
+    command: python -m scripts.run_framework --repetitions 20 --seed 4242
     volumes:
       - ./results:/app/results
+    environment:
+      - PYTHONUNBUFFERED=1
