@@ -52,9 +52,7 @@ def execute_once(scenario, run_index: int, seed: int, synthetic_mode: bool = Fal
         with stage_timer("send_to_target", stage_latency):
             sent = target.send_to_target(translated)
 
-        if synthetic_mode:
-            pass
-        else:
+        if not synthetic_mode:
             success += 1
             if target.validate_roundtrip(sent, expected):
                 validations += 1
@@ -94,27 +92,62 @@ def run_benchmarks(output_dir: str = "results/raw_runs", repetitions: int = 20, 
     out.mkdir(parents=True, exist_ok=True)
     results: list[Path] = []
     scenarios = load_scenarios()
+
+    total_runs = len(scenarios) * repetitions
+    current_run = 0
+    print(
+        f"[benchmark] loaded {len(scenarios)} scenarios; repetitions={repetitions}; total_runs={total_runs}; synthetic_mode={synthetic_mode}",
+        flush=True,
+    )
+
     for scenario in scenarios:
+        print(f"[benchmark] scenario start: {scenario.scenario_id} ({scenario.method})", flush=True)
         for run_index in range(repetitions):
             seed = base_seed + run_index
             result = execute_once(scenario, run_index=run_index, seed=seed, synthetic_mode=synthetic_mode)
             path = out / f"{scenario.scenario_id}__{scenario.method}__run{run_index:03d}.json"
             path.write_text(json.dumps(result.to_dict(), indent=2))
             results.append(path)
+            current_run += 1
+            progress = (current_run / total_runs) * 100.0 if total_runs else 100.0
+            print(
+                f"[benchmark] run {current_run}/{total_runs} ({progress:.1f}%) complete: "
+                f"scenario={scenario.scenario_id} method={scenario.method} run={run_index} "
+                f"latency_ms={result.end_to_end_latency_ms:.4f} throughput={result.throughput_msg_per_sec:.2f}",
+                flush=True,
+            )
             LOGGER.info("completed scenario=%s method=%s run=%d", scenario.scenario_id, scenario.method, run_index)
+        print(f"[benchmark] scenario complete: {scenario.scenario_id}", flush=True)
 
     csv_path = out.parent / "aggregated" / "runs.csv"
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=[
-            "scenario_id", "method", "run_index", "seed", "measured", "synthetic_mode",
-            "success_rate", "validation_pass_rate", "throughput_msg_per_sec", "end_to_end_latency_ms",
-            "startup_overhead_ms", "payload_bytes", "cpu_time_sec", "memory_mb_max",
-        ])
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=[
+                "scenario_id",
+                "method",
+                "run_index",
+                "seed",
+                "measured",
+                "synthetic_mode",
+                "success_rate",
+                "validation_pass_rate",
+                "throughput_msg_per_sec",
+                "end_to_end_latency_ms",
+                "startup_overhead_ms",
+                "payload_bytes",
+                "cpu_time_sec",
+                "memory_mb_max",
+            ],
+        )
         writer.writeheader()
         for file in results:
             row = json.loads(file.read_text())
             writer.writerow({k: row[k] for k in writer.fieldnames})
+
+    print(f"[benchmark] wrote {len(results)} run artifacts to {out}", flush=True)
+    print(f"[benchmark] wrote aggregate CSV to {csv_path}", flush=True)
     return results
 
 

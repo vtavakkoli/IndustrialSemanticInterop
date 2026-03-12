@@ -21,7 +21,7 @@ See:
 - `docs/limitations.md`
 - `docs/paper_claim_boundary.md`
 
-## Quickstart
+## Quickstart (local Python)
 ```bash
 python -m venv .venv
 source .venv/bin/activate
@@ -29,8 +29,20 @@ pip install -r requirements.txt
 python -m scripts.run_framework --repetitions 20 --seed 4242
 ```
 
-Outputs are written to `results/`:
+## Quickstart (Docker)
+```bash
+docker compose up --build
+```
+
+The Docker run executes the same pipeline and streams progress lines to stdout such as:
+- `[framework] starting benchmark run ...`
+- `[benchmark] run 4/100 (4.0%) complete ...`
+- `[framework] pipeline completed successfully`
+
+## Outputs
+Generated under `results/`:
 - `raw_runs/*.json`
+- `aggregated/runs.csv`
 - `aggregated/summary.json`
 - `aggregated/descriptive_stats.json`
 - `figures/latency_summary.svg`
@@ -47,6 +59,11 @@ python -m analysis.aggregate
 python -m analysis.statistics
 python -m analysis.plots
 python -m analysis.report
+```
+
+## Optional non-plot run (for constrained environments)
+```bash
+python -m scripts.run_framework --repetitions 20 --seed 4242 --skip-plots
 ```
 
 ## Deprecated legacy benchmark path
