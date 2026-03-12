@@ -1,0 +1,31 @@
+repetitions: 3
+seed: 4242
+strategies:
+  - ontology_based
+  - direct_translation
+  - soa
+  - opcua_mediated
+  - adaptive_selection
+policies:
+  - balanced
+  - latency_first
+  - semantics_first
+  - security_first
+  - fault_resilient
+scales: [small, medium, large]
+security_modes: [none, auth, encryption, full]
+scenario_flags:
+  - none
+  - missing_metadata
+  - ambiguous_mapping
+  - unit_mismatch
+  - ontology_service_down
+  - opcua_endpoint_down
+  - authentication_failure
+  - high_load
+  - secure_and_semantic
+  - multi_constraint_mixed
+results:
+  raw_dir: results/raw_runs
+  aggregated_dir: results/aggregated
+  report_html: results/final_report.html
