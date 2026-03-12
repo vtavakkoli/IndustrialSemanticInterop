@@ -21,6 +21,12 @@ def _scenario_table_rows(summary_rows):
     return '\n'.join(out)
 
 
+
+
+def _report_src(path: str) -> str:
+    return path.replace("results/", "", 1) if path.startswith("results/") else path
+
+
 def generate_report(results_root='results'):
     root = Path(results_root)
     tidy = _read_csv(root / 'aggregated' / 'tidy_runs.csv')
@@ -128,7 +134,7 @@ def generate_report(results_root='results'):
         chunks = [f"<div class='card'><h2>{title}</h2><p>{text}</p>"]
         for p, t, cap, how, pat, why in chart_list:
             chunks.append(
-                f"<figure><img src='{p}' alt='{t}'/><figcaption><strong>{t}.</strong> {cap} <em>How to read:</em> {how} <em>Pattern:</em> {pat} <em>Why it matters:</em> {why}</figcaption></figure>"
+                f"<figure><img src='{_report_src(p)}' alt='{t}'/><figcaption><strong>{t}.</strong> {cap} <em>How to read:</em> {how} <em>Pattern:</em> {pat} <em>Why it matters:</em> {why}</figcaption></figure>"
             )
         chunks.append('</div>')
         return ''.join(chunks)
