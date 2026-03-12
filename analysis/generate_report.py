@@ -121,6 +121,52 @@ def _build_generated_tables(tidy):
     return campaign_rows, perf_rows, decision_rows, fault_rows, recommendations, boundaries
 
 
+
+
+def _build_pairwise_comparison_rows(perf_rows):
+    rows = []
+    by_strategy = {r["strategy"]: r for r in perf_rows}
+    for strategy, base in sorted(by_strategy.items()):
+        for other, ref in sorted(by_strategy.items()):
+            if strategy == other:
+                continue
+            lat_delta = _safe_float(base.get("avg_latency")) - _safe_float(ref.get("avg_latency"))
+            thr_delta = _safe_float(base.get("throughput")) - _safe_float(ref.get("throughput"))
+            succ_delta = _safe_float(base.get("success_rate")) - _safe_float(ref.get("success_rate"))
+            rows.append(
+                {
+                    "method": strategy,
+                    "compared_to": other,
+                    "latency_delta_ms": f"{lat_delta:+.4f}",
+                    "throughput_delta": f"{thr_delta:+.2f}",
+                    "success_rate_delta": f"{succ_delta:+.3f}",
+                }
+            )
+    return rows
+
+
+def _build_rankings(perf_rows):
+    ranking_rows = []
+    for row in perf_rows:
+        score = (
+            (_safe_float(row.get("success_rate")) * 0.5)
+            + (_safe_float(row.get("throughput")) / 10000.0 * 0.3)
+            - (_safe_float(row.get("avg_latency")) / 10.0 * 0.2)
+        )
+        ranking_rows.append(
+            {
+                "method": row["strategy"],
+                "composite_score": f"{score:.4f}",
+                "avg_latency": row["avg_latency"],
+                "throughput": row["throughput"],
+                "success_rate": row["success_rate"],
+            }
+        )
+    ranking_rows.sort(key=lambda x: _safe_float(x["composite_score"]), reverse=True)
+    for idx, row in enumerate(ranking_rows, start=1):
+        row["rank"] = idx
+    return ranking_rows
+
 def generate_report(results_root="results"):
     root = Path(results_root)
     tidy = _read_csv(root / "aggregated" / "tidy_runs.csv")
@@ -140,6 +186,8 @@ def generate_report(results_root="results"):
     weakest = min(strat_success, key=strat_success.get) if strat_success else "n/a"
 
     campaign_rows, perf_rows, decision_rows, fault_rows, rec_rows, bound_rows = _build_generated_tables(tidy)
+    pairwise_rows = _build_pairwise_comparison_rows(perf_rows)
+    ranking_rows = _build_rankings(perf_rows)
 
     git_commit = (root / "environment" / "git_commit.txt").read_text().strip() if (root / "environment" / "git_commit.txt").exists() else "unknown"
     env = {
@@ -174,6 +222,11 @@ def generate_report(results_root="results"):
         _table(["strategy", "avg_latency", "p95_latency", "throughput", "success_rate", "fallback_rate"], perf_rows),
         _table(["scenario_type", "recommended_strategy", "rationale"], rec_rows),
         "<div class='placeholder'>Figure Placeholder: Latency vs Robustness Trade-off</div></div>",
+        "<div class='card'><h2>Method-to-Method Comparative Analysis</h2>",
+        "<p>This section restores and extends direct cross-method comparison so each method is compared against every other method under the same campaign outputs.</p>",
+        _table(["rank", "method", "composite_score", "avg_latency", "throughput", "success_rate"], ranking_rows),
+        _table(["method", "compared_to", "latency_delta_ms", "throughput_delta", "success_rate_delta"], pairwise_rows),
+        "</div>",
         "<div class='card'><h2>Statistical Summary</h2>",
         f"<p>Descriptive stats rows: {len(summary)}; CI rows: {len(ci)}; effect-size rows: {len(effects)}. Assumption checks: {len(stats)}.</p>",
         "<p>Inferential outcomes are reported as available from the current dependency-light statistical pipeline; interpret with virtualized-environment caution.</p></div>",
@@ -199,6 +252,9 @@ def generate_report(results_root="results"):
         f"- Runs: {len(tidy)}",
         f"- Best latency method: {best_latency_method}",
         f"- Strongest success profile: {strongest}",
+        "",
+        "## Comparative Method Ranking",
+        *[f"- #{r['rank']} {r['method']} (score={r['composite_score']})" for r in ranking_rows],
         "",
         "## Reproducibility",
         f"- Git commit: {env['git_commit']}",
