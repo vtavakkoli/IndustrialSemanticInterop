@@ -1,40 +1,41 @@
 from collections import defaultdict
-from statistics import mean
 
-from .simple_png import Canvas, PALETTE
+from .mpl_config import setup_matplotlib
+
+setup_matplotlib()
+
+import matplotlib.pyplot as plt
 
 
 def plot_security_latency(rows, out='results/figures/figure_08_security_latency_overhead.png'):
-    c = Canvas(1200, 720)
-    c.text(40, 20, 'Figure 08: Security Latency Overhead')
-    x0, y0, x1, y1 = c.axes()
     sec = ['none', 'auth', 'encryption', 'full']
-    by = defaultdict(list)
+    vals = defaultdict(list)
     for r in rows:
-        by[r['security']].append(float(r['latency_mean_ms']))
-    vals = [mean(by[s]) for s in sec]
-    vmax = max(vals)
-    for i, s in enumerate(sec):
-        x = x0 + 60 + i * 220
-        h = int((vals[i] / (vmax + 1e-9)) * (y0 - y1))
-        c.rect(x, y0 - h, x + 120, y0, PALETTE[i])
-        c.text(x, y0 + 24, s)
-    c.save_png(out)
+        vals[r['security']].append(float(r['latency_mean_ms']))
+    ys = [sum(vals[s]) / max(1, len(vals[s])) for s in sec]
+
+    fig, ax = plt.subplots(figsize=(11, 7))
+    ax.bar(sec, ys, color=['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3'])
+    ax.set_title('Figure 08: Security Latency Overhead')
+    ax.set_xlabel('Security mode')
+    ax.set_ylabel('Latency (ms)')
+    ax.grid(axis='y', alpha=0.3)
+    plt.savefig(out)
+    plt.close(fig)
 
 
 def plot_security_throughput(rows, out='results/figures/figure_09_security_throughput_overhead.png'):
-    c = Canvas(1200, 720)
-    c.text(40, 20, 'Figure 09: Security Throughput Overhead')
-    x0, y0, x1, y1 = c.axes()
     sec = ['none', 'auth', 'encryption', 'full']
-    by = defaultdict(list)
+    vals = defaultdict(list)
     for r in rows:
-        by[r['security']].append(float(r['throughput_msg_per_sec']))
-    vals = [mean(by[s]) for s in sec]
-    vmax = max(vals)
-    for i, s in enumerate(sec):
-        x = x0 + 60 + i * 220
-        h = int((vals[i] / (vmax + 1e-9)) * (y0 - y1))
-        c.rect(x, y0 - h, x + 120, y0, PALETTE[i])
-        c.text(x, y0 + 24, s)
-    c.save_png(out)
+        vals[r['security']].append(float(r['throughput_msg_per_sec']))
+    ys = [sum(vals[s]) / max(1, len(vals[s])) for s in sec]
+
+    fig, ax = plt.subplots(figsize=(11, 7))
+    ax.bar(sec, ys, color=['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3'])
+    ax.set_title('Figure 09: Security Throughput Overhead')
+    ax.set_xlabel('Security mode')
+    ax.set_ylabel('Throughput (msg/s)')
+    ax.grid(axis='y', alpha=0.3)
+    plt.savefig(out)
+    plt.close(fig)

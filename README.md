@@ -75,3 +75,8 @@ Writen by Dr. Vahid Tavakkoli 2026
 
 ## License
 This project is licensed under the MIT License. See `LICENSE`.
+
+## Plot text rendering
+All charts are rendered with Matplotlib (headless `Agg` backend) and a centrally configured sans-serif font stack (`DejaVu Sans` first) to ensure readable titles, axis labels, ticks, legends, and annotations in Docker and local execution.
+A font validation artifact is written to `results/figures/font_validation.json`.
+

@@ -11,6 +11,7 @@ from analysis.stats_analysis import run_stats
 from analysis.effect_sizes import compute_effect_sizes
 from analysis.plot_all import plot_all
 from analysis.generate_report import generate_report
+from analysis.validate_figures import validate_readable_text
 
 
 def write_environment(results_root="results"):
@@ -39,6 +40,7 @@ def run_all(repetitions=5):
     run_stats(df, "results/aggregated")
     compute_effect_sizes(df, "results/aggregated/effect_sizes.csv")
     plot_all(df)
+    validate_readable_text()
     write_environment("results")
     generate_report("results")
 
@@ -56,6 +58,7 @@ def run_all(repetitions=5):
             "results/final_report.html",
         ],
         "figures": sorted([str(x) for x in (root / "figures").glob("figure_*.png")]),
+        "font_validation": "results/figures/font_validation.json",
     }
     (root / "manifest.json").write_text(json.dumps(manifest, indent=2))
 

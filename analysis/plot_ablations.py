@@ -1,9 +1,12 @@
 from pathlib import Path
 import json
 from collections import defaultdict
-from statistics import mean
 
-from .simple_png import Canvas, PALETTE
+from .mpl_config import setup_matplotlib
+
+setup_matplotlib()
+
+import matplotlib.pyplot as plt
 
 
 def _rows(path='results/ablations'):
@@ -12,39 +15,37 @@ def _rows(path='results/ablations'):
 
 def plot_ablation_latency(path='results/ablations', out='results/figures/figure_12_ablation_impact_latency.png'):
     rows = _rows(path)
-    c = Canvas(1200, 720)
-    c.text(40, 20, 'Figure 12: Ablation Impact on Latency')
-    x0, y0, x1, y1 = c.axes()
-    by = defaultdict(list)
+    vals = defaultdict(list)
     for r in rows:
-        label = 'reasoning_on' if r.get('ablation', {}).get('reasoning', True) else 'reasoning_off'
-        by[label].append(float(r['latency_mean_ms']))
-    labels = sorted(by)
-    vals = [mean(by[l]) for l in labels]
-    vmax = max(vals) if vals else 1
-    for i, l in enumerate(labels):
-        x = x0 + 180 + i * 260
-        h = int((vals[i] / vmax) * (y0 - y1))
-        c.rect(x, y0 - h, x + 120, y0, PALETTE[i])
-        c.text(x, y0 + 24, l)
-    c.save_png(out)
+        key = 'reasoning_on' if r.get('ablation', {}).get('reasoning', True) else 'reasoning_off'
+        vals[key].append(float(r['latency_mean_ms']))
+    labels = sorted(vals)
+    ys = [sum(vals[k]) / max(1, len(vals[k])) for k in labels]
+
+    fig, ax = plt.subplots(figsize=(11, 7))
+    ax.bar(labels, ys, color=['#1f77b4', '#ff7f0e'])
+    ax.set_title('Figure 12: Ablation Impact on Latency')
+    ax.set_xlabel('Ablation setting')
+    ax.set_ylabel('Latency (ms)')
+    ax.grid(axis='y', alpha=0.3)
+    plt.savefig(out)
+    plt.close(fig)
 
 
 def plot_ablation_throughput(path='results/ablations', out='results/figures/figure_13_ablation_impact_throughput.png'):
     rows = _rows(path)
-    c = Canvas(1200, 720)
-    c.text(40, 20, 'Figure 13: Ablation Impact on Throughput')
-    x0, y0, x1, y1 = c.axes()
-    by = defaultdict(list)
+    vals = defaultdict(list)
     for r in rows:
-        label = 'cache_on' if r.get('ablation', {}).get('cache', True) else 'cache_off'
-        by[label].append(float(r['throughput_msg_per_sec']))
-    labels = sorted(by)
-    vals = [mean(by[l]) for l in labels]
-    vmax = max(vals) if vals else 1
-    for i, l in enumerate(labels):
-        x = x0 + 180 + i * 260
-        h = int((vals[i] / vmax) * (y0 - y1))
-        c.rect(x, y0 - h, x + 120, y0, PALETTE[i])
-        c.text(x, y0 + 24, l)
-    c.save_png(out)
+        key = 'cache_on' if r.get('ablation', {}).get('cache', True) else 'cache_off'
+        vals[key].append(float(r['throughput_msg_per_sec']))
+    labels = sorted(vals)
+    ys = [sum(vals[k]) / max(1, len(vals[k])) for k in labels]
+
+    fig, ax = plt.subplots(figsize=(11, 7))
+    ax.bar(labels, ys, color=['#2ca02c', '#d62728'])
+    ax.set_title('Figure 13: Ablation Impact on Throughput')
+    ax.set_xlabel('Ablation setting')
+    ax.set_ylabel('Throughput (msg/s)')
+    ax.grid(axis='y', alpha=0.3)
+    plt.savefig(out)
+    plt.close(fig)
