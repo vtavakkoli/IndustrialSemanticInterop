@@ -14,11 +14,14 @@ def compute_effect_sizes(rows, out_path: str = "results/aggregated/effect_sizes.
     out = []
     for scale in scales:
         for m1, m2 in itertools.combinations(methods, 2):
-            a = grouped[(scale, m1)]
-            b = grouped[(scale, m2)]
+            a = grouped.get((scale, m1), [])
+            b = grouped.get((scale, m2), [])
+            if not a or not b:
+                continue
             out.append({"scale": scale, "method_a": m1, "method_b": m2, "mean_diff_ms": mean(a) - mean(b)})
 
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["scale", "method_a", "method_b", "mean_diff_ms"])
-        w.writeheader(); w.writerows(out)
+        w.writeheader()
+        w.writerows(out)
     return out
