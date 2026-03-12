@@ -195,7 +195,7 @@ def run_benchmarks(output_dir: str = "results/raw_runs", repetitions: int = 20, 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", default="results/raw_runs")
-    parser.add_argument("--repetitions", type=int, default=20)
+    parser.add_argument("--repetitions", type=int, default=100)
     parser.add_argument("--base-seed", type=int, default=4242)
     parser.add_argument("--synthetic-mode", action="store_true")
     args = parser.parse_args()

@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["python", "-m", "scripts.run_framework", "--repetitions", "20", "--seed", "4242"]
+CMD ["python", "-m", "scripts.run_framework", "--repetitions", "100", "--seed", "4242"]

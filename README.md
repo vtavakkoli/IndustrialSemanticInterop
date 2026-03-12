@@ -12,6 +12,7 @@ This repository provides a **reproducible interoperability benchmarking framewor
 - Canonical intermediate message model used by semantic and bridge paths.
 - Explicit JSON scenarios with expected outputs and validation criteria.
 - Structured metrics and descriptive-statistics analysis pipeline.
+- Automatic full method×scale×security matrix expansion for every base scenario template.
 - Comprehensive publication-style HTML report generation with full figure set (`figure_01`..`figure_18`).
 
 ## Scope honesty
@@ -27,7 +28,7 @@ See:
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python -m scripts.run_framework --repetitions 20 --seed 4242
+python -m scripts.run_framework --repetitions 100 --seed 4242
 ```
 
 ## Quickstart (Docker)
@@ -37,7 +38,7 @@ docker compose up --build
 
 The Docker run executes the full pipeline and streams progress lines to stdout such as:
 - `[framework] starting benchmark run ...`
-- `[benchmark] run 4/100 (4.0%) complete ...`
+- `[benchmark] run 400/24000 (1.7%) complete ...`
 - `[framework] generating comprehensive final_report.html`
 - `[framework] pipeline completed successfully`
 
@@ -54,7 +55,7 @@ Generated under `results/`:
 
 ## Minimal reproducible benchmark command
 ```bash
-python -m benchmark.runner --repetitions 20 --base-seed 4242
+python -m benchmark.runner --repetitions 100 --base-seed 4242
 ```
 
 ## Optional modes

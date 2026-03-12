@@ -63,7 +63,7 @@ def _run_comprehensive_report_pipeline(results_root: str = "results") -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--repetitions", type=int, default=20)
+    parser.add_argument("--repetitions", type=int, default=100)
     parser.add_argument("--seed", type=int, default=4242)
     parser.add_argument("--synthetic-mode", action="store_true")
     parser.add_argument("--skip-plots", action="store_true")
