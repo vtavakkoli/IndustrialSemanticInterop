@@ -16,3 +16,19 @@ def test_adaptive_fallback_keys_present():
     result = _execute_adaptive(scenario, "fault_resilient", selector, random.Random(4))
     assert "fallback_used" in result
     assert "selected_strategy" in result
+
+
+def test_selector_adaptive_auto_prefers_security_aware_option():
+    selector = StrategySelector()
+    decision = selector.select(
+        "adaptive_auto",
+        {
+            "latency_sensitivity": 0.4,
+            "semantic_complexity": 0.5,
+            "security": "full",
+            "fault_mode": "none",
+            "interoperability_breadth": 0.4,
+            "resource_constraints": 0.3,
+        },
+    )
+    assert decision.selected_strategy in {"opcua_mediated", "soa"}

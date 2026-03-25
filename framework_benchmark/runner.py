@@ -30,11 +30,68 @@ FAULT_PENALTIES = {
 ProgressCallback = Callable[[str], None]
 
 
+def _read_cgroup_memory_limit_mb() -> float:
+    candidates = [
+        Path("/sys/fs/cgroup/memory.max"),
+        Path("/sys/fs/cgroup/memory/memory.limit_in_bytes"),
+    ]
+    for c in candidates:
+        if not c.exists():
+            continue
+        try:
+            raw = c.read_text(encoding="utf-8").strip()
+            if raw == "max":
+                return 4096.0
+            value = int(raw)
+            if value <= 0:
+                continue
+            return value / (1024 * 1024)
+        except Exception:
+            continue
+    return 4096.0
+
+
+def _read_cgroup_cpu_count() -> float:
+    cfs = Path("/sys/fs/cgroup/cpu.max")
+    if cfs.exists():
+        try:
+            quota, period = cfs.read_text(encoding="utf-8").strip().split()
+            if quota != "max":
+                return max(float(quota) / float(period), 0.25)
+        except Exception:
+            pass
+    legacy = Path("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")
+    period = Path("/sys/fs/cgroup/cpu/cpu.cfs_period_us")
+    if legacy.exists() and period.exists():
+        try:
+            quota = int(legacy.read_text(encoding="utf-8").strip())
+            per = int(period.read_text(encoding="utf-8").strip())
+            if quota > 0 and per > 0:
+                return max(quota / per, 0.25)
+        except Exception:
+            pass
+    return 4.0
+
+
+def _load_factor(scale: str, resource_constraints: float) -> float:
+    base = {"small": 1.0, "medium": 1.35, "large": 1.9}[scale]
+    return base * (1.0 + resource_constraints * 0.45)
+
+
 def _simulate_strategy(strategy: str, scenario: Scenario, rng: random.Random) -> StrategyResult:
     p = BASE_PROFILES[strategy]
     failure_bias, latency_bias = FAULT_PENALTIES.get(scenario.fault_mode, (0.0, 0.0))
     security_bias = {"none": 1.0, "auth": 1.05, "encryption": 1.12, "full": 1.18}[scenario.security_mode]
+    load_factor = _load_factor(scenario.scale, scenario.resource_constraints)
     scale_bias = {"small": 1.0, "medium": 1.1, "large": 1.25}[scenario.scale]
+    queueing_bias = 0.45 * (load_factor - 1.0)
+    security_handshake_ms = {
+        "none": 0.0,
+        "auth": 0.18,
+        "encryption": 0.36,
+        "full": 0.62,
+    }[scenario.security_mode]
+    security_jitter_ms = rng.uniform(0.0, security_handshake_ms * 0.35)
 
     failure_prob = (1 - p["rob"]) + failure_bias
     if strategy == "ontology_based" and scenario.fault_mode == "ontology_service_down":
@@ -47,8 +104,8 @@ def _simulate_strategy(strategy: str, scenario: Scenario, rng: random.Random) ->
     invalid_mapping = scenario.fault_mode in {"ambiguous_mapping", "unit_mismatch"} and rng.random() < 0.2
     semantic_resolution = rng.random() < p["sem"]
 
-    latency_ms = p["lat"] * security_bias * scale_bias + latency_bias + rng.random() * 0.3
-    throughput = p["thr"] / (security_bias * scale_bias) * (0.9 + rng.random() * 0.2)
+    latency_ms = (p["lat"] * security_bias * scale_bias * load_factor) + latency_bias + queueing_bias + security_handshake_ms + security_jitter_ms + (rng.random() * 0.3)
+    throughput = (p["thr"] / (security_bias * scale_bias * load_factor)) * (0.9 + rng.random() * 0.2)
     recovery_time = (0.0 if success else 4.0 + rng.random() * 4.0)
     return StrategyResult(
         success=success,
@@ -112,6 +169,8 @@ def run_campaign(config: dict[str, Any], progress: ProgressCallback | None = Non
     strategies = config["strategies"]
     policies = config.get("policies", ["balanced"])
     selector = StrategySelector()
+    mem_limit_mb = _read_cgroup_memory_limit_mb()
+    cpu_limit_cores = _read_cgroup_cpu_count()
 
     total_runs = len(scenarios) * repetitions * len(strategies)
     completed = 0
@@ -185,6 +244,40 @@ def run_campaign(config: dict[str, Any], progress: ProgressCallback | None = Non
                         "resource_usage_memory": 0.0,
                         "confidence_score": 0.0,
                         "mapping_validity_score": 1.0 - float(result.invalid_mapping),
+                    }
+                )
+                strategy_cpu_base = {
+                    "ontology_based": 0.62,
+                    "direct_translation": 0.42,
+                    "soa": 0.50,
+                    "opcua_mediated": 0.54,
+                    "adaptive_selection": 0.58,
+                }[strategy]
+                security_cpu_mul = {"none": 1.0, "auth": 1.08, "encryption": 1.15, "full": 1.24}[scenario.security_mode]
+                lf = _load_factor(scenario.scale, scenario.resource_constraints)
+                cpu_est = min((strategy_cpu_base * security_cpu_mul * lf * (0.95 + rng.random() * 0.1)) / max(cpu_limit_cores, 0.25), 1.0)
+                mem_base_mb = {
+                    "ontology_based": 380.0,
+                    "direct_translation": 160.0,
+                    "soa": 220.0,
+                    "opcua_mediated": 260.0,
+                    "adaptive_selection": 300.0,
+                }[strategy]
+                mem_est = min(mem_base_mb * lf * (1.0 + 0.05 * security_cpu_mul), mem_limit_mb * 0.92)
+                offered_load_msg_s = {
+                    "small": 800.0,
+                    "medium": 2200.0,
+                    "large": 5200.0,
+                }[scenario.scale] * (0.95 + rng.random() * 0.1)
+                rec.update(
+                    {
+                        "resource_usage_cpu": cpu_est,
+                        "resource_usage_memory": mem_est,
+                        "cpu_percent_avg": cpu_est * 100.0,
+                        "memory_mb_avg": mem_est,
+                        "container_cpu_limit_cores": cpu_limit_cores,
+                        "container_memory_limit_mb": mem_limit_mb,
+                        "offered_load_msg_per_sec": offered_load_msg_s,
                     }
                 )
                 records.append(rec)
