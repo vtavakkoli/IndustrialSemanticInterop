@@ -22,7 +22,7 @@ Legacy method labels and benchmark scripts remain available for backward compati
 
 ## Adaptive Selection Concept
 
-`adaptive_selection` is a rule-based policy layer that selects a base strategy according to scenario features (latency sensitivity, semantic complexity, security level, interoperability breadth, fault mode, resource constraints) and supports fallback when an initial choice fails.
+`adaptive_selection` is a rule-based policy layer that selects a base strategy according to scenario features (latency sensitivity, semantic complexity, security level, interoperability breadth, fault mode, resource constraints). The `adaptive_auto` policy now applies contextual scoring before selecting, and fallback is used when an initial choice fails.
 
 See `docs/adaptive_selection.md`.
 
@@ -32,6 +32,7 @@ See `docs/adaptive_selection.md`.
 ```bash
 docker compose up --build
 ```
+This command now runs the full workflow end-to-end: simulation campaign, aggregation, statistical analysis, scalability/adaptive comparisons, figure generation, and final report generation.
 
 ### Native Python mode
 ```bash

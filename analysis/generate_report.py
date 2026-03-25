@@ -174,6 +174,8 @@ def generate_report(results_root="results"):
     stats = _read_csv(root / "aggregated" / "stat_tests.csv")
     ci = _read_csv(root / "aggregated" / "confidence_intervals.csv")
     effects = _read_csv(root / "aggregated" / "effect_sizes.csv")
+    adaptive_vs_static = _read_csv(root / "aggregated" / "adaptive_vs_static.csv")
+    scalability = _read_csv(root / "aggregated" / "scalability_summary.csv")
     adaptive_summary = {}
     ad_sum_path = root / "aggregated" / "adaptive_summary.json"
     if ad_sum_path.exists():
@@ -213,6 +215,7 @@ def generate_report(results_root="results"):
         f"<p>Adaptive selected strategy distribution: {adaptive_summary.get('selected_strategy_distribution', {})}</p>",
         f"<p>Fallback success rate: {adaptive_summary.get('fallback_success_rate', 0.0):.3f}; scenario completion rate: {adaptive_summary.get('success_rate', 0.0):.3f}.</p>",
         _table(["policy", "selected_strategy", "selection_count", "success_rate", "avg_overhead"], decision_rows),
+        _table(["scenario_id", "adaptive_latency_ms", "static_latency_ms", "latency_delta_ms", "adaptive_throughput", "static_throughput", "throughput_delta", "adaptive_success", "static_success", "success_delta"], adaptive_vs_static[:20]),
         "<div class='placeholder'>Figure Placeholder: Strategy Selection Distribution</div>",
         "<div class='placeholder'>Figure Placeholder: Scenario-wise Adaptive Policy Behavior</div></div>",
         "<div class='card'><h2>Robustness and Fault Analysis</h2>",
@@ -232,6 +235,10 @@ def generate_report(results_root="results"):
         "<p>Inferential outcomes are reported as available from the current dependency-light statistical pipeline; interpret with virtualized-environment caution.</p></div>",
         "<div class='card'><h2>Benchmark Campaign Summary Table</h2>",
         _table(["strategy", "scale", "security_mode", "fault_mode", "runs", "successful_runs"], campaign_rows),
+        "</div>",
+        "<div class='card'><h2>Scalability Analysis</h2>",
+        "<p>Scalability summaries are aggregated by method and scale, reflecting offered load, achieved throughput, and resource usage under container limits.</p>",
+        _table(["method", "scale", "mean_offered_load_msg_s", "mean_latency_ms", "mean_throughput_msg_s", "mean_cpu_percent", "mean_memory_mb"], scalability),
         "</div>",
         "<div class='card'><h2>Interpretation Boundaries</h2>",
         _table(["aspect", "supported_now", "limitation"], bound_rows),

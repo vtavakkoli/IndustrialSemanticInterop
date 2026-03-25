@@ -12,6 +12,7 @@ policies:
   - semantics_first
   - security_first
   - fault_resilient
+  - adaptive_auto
 scales: [small, medium, large]
 security_modes: [none, auth, encryption, full]
 scenario_flags:

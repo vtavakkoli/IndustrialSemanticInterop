@@ -6,6 +6,11 @@ from pathlib import Path
 
 from analysis.generate_report import generate_report
 from analysis.aggregate_results import aggregate
+from analysis.adaptive_analysis import summarize_adaptive_vs_static, summarize_scalability
+from analysis.plot_all import plot_all
+from analysis.stats_analysis import run_stats
+from analysis.effect_sizes import compute_effect_sizes
+from analysis.validate_figures import validate_readable_text
 
 from .config import load_config
 from .runner import run_campaign, summarize_records, write_records
@@ -28,7 +33,13 @@ def cmd_run(args) -> None:
     _log(f"[framework_benchmark] wrote adaptive summary: {summary_path}")
 
     _log("[framework_benchmark] aggregating raw runs")
-    aggregate(cfg["results"]["raw_dir"], cfg["results"]["aggregated_dir"])
+    rows, _, _ = aggregate(cfg["results"]["raw_dir"], cfg["results"]["aggregated_dir"])
+    run_stats(rows, cfg["results"]["aggregated_dir"])
+    compute_effect_sizes(rows, str(Path(cfg["results"]["aggregated_dir"]) / "effect_sizes.csv"))
+    summarize_adaptive_vs_static(rows, cfg["results"]["aggregated_dir"])
+    summarize_scalability(rows, cfg["results"]["aggregated_dir"])
+    plot_all(rows)
+    validate_readable_text()
 
     _log("[framework_benchmark] generating report")
     generate_report("results")
