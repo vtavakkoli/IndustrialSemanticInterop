@@ -1,4 +1,4 @@
-repetitions: 3
+repetitions: 20
 seed: 4242
 strategies:
   - ontology_based
