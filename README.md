@@ -1,6 +1,6 @@
 # Adaptive Interoperability Strategies Benchmark for Industrial Systems
 
-This repository provides an IEEE-ready, reproducible benchmark for evaluating semantic interoperability strategies in industrial software stacks.
+This repository provides a reproducible benchmark for evaluating semantic interoperability strategies in industrial software stacks.
 
 ## Contribution
 
