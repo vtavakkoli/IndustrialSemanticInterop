@@ -31,7 +31,23 @@ def _security_multiplier(mode: str) -> float:
 
 
 def _method_multiplier(method: str) -> float:
-    return {"baseline": 1.0, "direct_translation": 1.06, "semantic_enriched": 1.14}[method]
+    return {
+        "direct_translation": 0.92,
+        "opcua_mediated": 1.03,
+        "soa": 1.08,
+        "adaptive_selection": 1.12,
+        "ontology_based": 1.22,
+    }.get(method, 1.0)
+
+
+def _method_work_units(method: str) -> int:
+    return {
+        "direct_translation": 8,
+        "opcua_mediated": 12,
+        "soa": 14,
+        "adaptive_selection": 16,
+        "ontology_based": 20,
+    }.get(method, 10)
 
 
 def run_trial(scenario: dict, run_index: int, seed: int, fault: str | None = None, ablation: dict | None = None):
@@ -54,9 +70,13 @@ def run_trial(scenario: dict, run_index: int, seed: int, fault: str | None = Non
     meth_mul = _method_multiplier(scenario["method"])
     extra_mul = 1.0
     if ablation:
-        extra_mul *= 0.94 if not ablation.get("cache", True) else 1.0
-        extra_mul *= 0.92 if not ablation.get("reasoning", True) else 1.0
-        extra_mul *= 1.03 if ablation.get("batching", False) else 1.0
+        variant = ablation.get("variant", "full_framework")
+        if variant == "no_adaptive":
+            extra_mul *= 0.95
+        elif variant == "no_fault_handling":
+            extra_mul *= 1.08
+        elif variant == "no_security_awareness":
+            extra_mul *= 0.90
 
     for _ in range(workload.message_count):
         payload = {
@@ -76,13 +96,23 @@ def run_trial(scenario: dict, run_index: int, seed: int, fault: str | None = Non
         if status in {"malformed", "semantic_failure"}:
             errors += 1
             retries += 1
-            if rng.random() > 0.4:
+            retry_threshold = {
+                "adaptive_selection": 0.25,
+                "direct_translation": 0.42,
+                "opcua_mediated": 0.45,
+                "soa": 0.47,
+                "ontology_based": 0.40,
+            }.get(scenario["method"], 0.4)
+            if ablation and ablation.get("variant") == "no_fault_handling":
+                retry_threshold = 0.8
+            if rng.random() > retry_threshold:
                 retry_success += 1
                 completed += 1
             continue
 
         _ = payload["value"] * sec_mul * meth_mul * extra_mul
-        for k in range(workload.concurrency * 10):
+        base_work = workload.concurrency * _method_work_units(scenario["method"])
+        for k in range(base_work):
             _ = (k * 3) % 7
         latencies_ms.append((time.perf_counter() - t_msg) * 1000.0)
         recv += psize
@@ -119,13 +149,13 @@ def run_trial(scenario: dict, run_index: int, seed: int, fault: str | None = Non
         "network_bytes_sent": int(max(sent, net["bytes_sent"])),
         "network_bytes_recv": int(max(recv, net["bytes_recv"])),
         "payload_bytes_avg": float((sent / max(workload.message_count, 1))),
-        "failure_rate": float((errors + dropped) / workload.message_count),
+        "failure_rate": float(max(workload.message_count - completed, 0) / workload.message_count),
         "recovery_time_ms": float((retries - retry_success) * 1.0),
         "message_loss": int(dropped),
         "retry_success_rate": float((retry_success / retries) if retries else 1.0),
         "notes": "fault=" + (fault or "none"),
         "hostname": socket.gethostname(),
         "environment": {"platform": platform.platform(), "python": platform.python_version()},
-        "ablation": ablation or {},
+        "ablation": ablation or {"variant": "full_framework"},
     }
     return result

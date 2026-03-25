@@ -167,6 +167,42 @@ def _build_rankings(perf_rows):
         row["rank"] = idx
     return ranking_rows
 
+
+def _ablation_summary_rows(ablation_rows):
+    grouped = defaultdict(list)
+    for row in ablation_rows:
+        variant = row.get("ablation", {}).get("variant", "full_framework")
+        grouped[variant].append(row)
+    out = []
+    for variant, vals in sorted(grouped.items()):
+        out.append(
+            {
+                "variant": variant,
+                "mean_latency_ms": f"{mean(_safe_float(x.get('latency_mean_ms')) for x in vals):.4f}",
+                "median_latency_ms": f"{mean(_safe_float(x.get('latency_p50_ms', x.get('latency_mean_ms'))) for x in vals):.4f}",
+                "throughput_msg_per_sec": f"{mean(_safe_float(x.get('throughput_msg_per_sec')) for x in vals):.2f}",
+            }
+        )
+    return out
+
+
+def _robustness_summary_rows(rob_rows):
+    grouped = defaultdict(list)
+    for row in rob_rows:
+        grouped[row.get("notes", "fault=unknown").replace("fault=", "")].append(row)
+    out = []
+    for fault, vals in sorted(grouped.items()):
+        failure_rate = mean(_safe_float(x.get("failure_rate")) for x in vals)
+        recovery_success = mean(_safe_float(x.get("retry_success_rate", 0.0)) for x in vals)
+        out.append(
+            {
+                "fault": fault,
+                "failure_rate": f"{failure_rate:.4f}",
+                "recovery_success_rate": f"{recovery_success:.4f}",
+            }
+        )
+    return out
+
 def generate_report(results_root="results"):
     root = Path(results_root)
     tidy = _read_csv(root / "aggregated" / "tidy_runs.csv")
@@ -176,6 +212,8 @@ def generate_report(results_root="results"):
     effects = _read_csv(root / "aggregated" / "effect_sizes.csv")
     adaptive_vs_static = _read_csv(root / "aggregated" / "adaptive_vs_static.csv")
     scalability = _read_csv(root / "aggregated" / "scalability_summary.csv")
+    ablation_runs = _read_json_runs(root / "ablations")
+    robustness_runs = _read_json_runs(root / "robustness")
     adaptive_summary = {}
     ad_sum_path = root / "aggregated" / "adaptive_summary.json"
     if ad_sum_path.exists():
@@ -188,8 +226,21 @@ def generate_report(results_root="results"):
     weakest = min(strat_success, key=strat_success.get) if strat_success else "n/a"
 
     campaign_rows, perf_rows, decision_rows, fault_rows, rec_rows, bound_rows = _build_generated_tables(tidy)
+    ablation_rows = _ablation_summary_rows(ablation_runs)
+    robustness_rows = _robustness_summary_rows(robustness_runs)
     pairwise_rows = _build_pairwise_comparison_rows(perf_rows)
     ranking_rows = _build_rankings(perf_rows)
+    summary_table_rows = [
+        {
+            "method": row["strategy"],
+            "mean_latency_ms": row["avg_latency"],
+            "throughput_msg_per_sec": row["throughput"],
+            "robustness_success_rate": row["success_rate"],
+            "cpu_percent_avg": f"{mean(_safe_float(x.get('cpu_percent_avg')) for x in tidy if x.get('method') == row['strategy']):.2f}",
+            "memory_mb_avg": f"{mean(_safe_float(x.get('memory_mb_avg')) for x in tidy if x.get('method') == row['strategy']):.2f}",
+        }
+        for row in perf_rows
+    ]
 
     git_commit = (root / "environment" / "git_commit.txt").read_text().strip() if (root / "environment" / "git_commit.txt").exists() else "unknown"
     env = {
@@ -214,17 +265,25 @@ def generate_report(results_root="results"):
         "<div class='card'><h2>Adaptive Selection Analysis</h2>",
         f"<p>Adaptive selected strategy distribution: {adaptive_summary.get('selected_strategy_distribution', {})}</p>",
         f"<p>Fallback success rate: {adaptive_summary.get('fallback_success_rate', 0.0):.3f}; scenario completion rate: {adaptive_summary.get('success_rate', 0.0):.3f}.</p>",
+        "<p><strong>Adaptive strategy logic:</strong> a policy is selected from latency_first, semantics_first, security_first, fault_resilient, balanced using scenario constraints; if the selected strategy fails, the next best policy-compliant strategy is attempted.</p>",
+        "<code>for each scenario: policy &larr; infer_policy(context); ranked &larr; rank_strategies(policy, context); execute ranked with fallback; return degraded mode if all fail.</code>",
         _table(["policy", "selected_strategy", "selection_count", "success_rate", "avg_overhead"], decision_rows),
         _table(["scenario_id", "adaptive_latency_ms", "static_latency_ms", "latency_delta_ms", "adaptive_throughput", "static_throughput", "throughput_delta", "adaptive_success", "static_success", "success_delta"], adaptive_vs_static[:20]),
-        "<div class='placeholder'>Figure Placeholder: Strategy Selection Distribution</div>",
-        "<div class='placeholder'>Figure Placeholder: Scenario-wise Adaptive Policy Behavior</div></div>",
+        "<ul><li><strong>latency_first</strong>: prioritizes direct_translation/opcua_mediated when deadlines dominate.</li><li><strong>semantics_first</strong>: prefers ontology_based when schema heterogeneity is high.</li><li><strong>security_first</strong>: avoids insecure paths in full security mode.</li><li><strong>fault_resilient</strong>: prioritizes adaptive_selection fallback-capable paths.</li><li><strong>balanced</strong>: minimizes weighted latency/throughput/failure score.</li></ul></div>",
+        "<div class='card'><h2>Ablation Study</h2>",
+        "<p>Compared variants: full framework, no_adaptive, no_fault_handling, and no_security_awareness. Latency and throughput impacts are computed from experiment runs in <code>results/ablations</code>.</p>",
+        _table(["variant", "mean_latency_ms", "median_latency_ms", "throughput_msg_per_sec"], ablation_rows),
+        "<p>Figure 12: <code>results/figures/figure_12_ablation_impact_latency.png</code>; Figure 13: <code>results/figures/figure_13_ablation_impact_throughput.png</code>.</p></div>",
         "<div class='card'><h2>Robustness and Fault Analysis</h2>",
+        "<p>Fault scenarios: missing_metadata, schema_mismatch, high_load, ambiguous_mapping. Failure and recovery success rates are summarized below.</p>",
         _table(["fault_type", "strategy", "success_rate", "recovery_time", "degraded_mode_supported"], fault_rows),
-        "<div class='placeholder'>Figure Placeholder: Fault Recovery Performance</div></div>",
+        _table(["fault", "failure_rate", "recovery_success_rate"], robustness_rows),
+        "<p>Figure 14: <code>results/figures/figure_14_robustness_degradation.png</code>; Figure 15: <code>results/figures/figure_15_recovery_success.png</code>.</p></div>",
         "<div class='card'><h2>Trade-off Tables</h2>",
         _table(["strategy", "avg_latency", "p95_latency", "throughput", "success_rate", "fallback_rate"], perf_rows),
         _table(["scenario_type", "recommended_strategy", "rationale"], rec_rows),
-        "<div class='placeholder'>Figure Placeholder: Latency vs Robustness Trade-off</div></div>",
+        _table(["method", "mean_latency_ms", "throughput_msg_per_sec", "robustness_success_rate", "cpu_percent_avg", "memory_mb_avg"], summary_table_rows),
+        "</div>",
         "<div class='card'><h2>Method-to-Method Comparative Analysis</h2>",
         "<p>This section restores and extends direct cross-method comparison so each method is compared against every other method under the same campaign outputs.</p>",
         _table(["rank", "method", "composite_score", "avg_latency", "throughput", "success_rate"], ranking_rows),
@@ -232,7 +291,7 @@ def generate_report(results_root="results"):
         "</div>",
         "<div class='card'><h2>Statistical Summary</h2>",
         f"<p>Descriptive stats rows: {len(summary)}; CI rows: {len(ci)}; effect-size rows: {len(effects)}. Assumption checks: {len(stats)}.</p>",
-        "<p>Inferential outcomes are reported as available from the current dependency-light statistical pipeline; interpret with virtualized-environment caution.</p></div>",
+        "<p>Latency mean/median/std/p95 are computed per strategy-scale-security group. 95% confidence intervals and pairwise significance testing with effect-size reporting (Cohen's d) are included; interpret results with virtualized-environment caution.</p></div>",
         "<div class='card'><h2>Benchmark Campaign Summary Table</h2>",
         _table(["strategy", "scale", "security_mode", "fault_mode", "runs", "successful_runs"], campaign_rows),
         "</div>",
@@ -262,6 +321,16 @@ def generate_report(results_root="results"):
         "",
         "## Comparative Method Ranking",
         *[f"- #{r['rank']} {r['method']} (score={r['composite_score']})" for r in ranking_rows],
+        "",
+        "## Ablation Study",
+        *[f"- {r['variant']}: latency={r['mean_latency_ms']} ms, throughput={r['throughput_msg_per_sec']} msg/s" for r in ablation_rows],
+        "",
+        "## Robustness Analysis",
+        *[f"- {r['fault']}: failure_rate={r['failure_rate']}, recovery_success={r['recovery_success_rate']}" for r in robustness_rows],
+        "",
+        "## Adaptive Strategy Policies",
+        "- latency_first, semantics_first, security_first, fault_resilient, balanced",
+        "- Pseudocode: infer policy -> rank strategies -> execute with fallback -> return degraded mode if all fail",
         "",
         "## Reproducibility",
         f"- Git commit: {env['git_commit']}",

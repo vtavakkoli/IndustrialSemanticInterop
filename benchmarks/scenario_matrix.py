@@ -1,6 +1,6 @@
 from itertools import product
 
-METHODS = ["baseline", "direct_translation", "semantic_enriched"]
+METHODS = ["adaptive_selection", "direct_translation", "ontology_based", "opcua_mediated", "soa"]
 SECURITY_MODES = ["none", "auth", "encryption", "full"]
 SCALES = ["small", "medium", "large"]
 
