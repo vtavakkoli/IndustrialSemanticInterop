@@ -1,89 +1,87 @@
-# Comparative Benchmarking Framework for Representative IEEE 1451–IEC 61499 Interoperability Strategies
+# Adaptive Interoperability Strategies Benchmark for Industrial Systems
 
-This repository provides a **reproducible virtualized benchmark** for standards-informed, representative interoperability strategies between IEEE 1451-style and IEC 61499-style data flows.
+This repository provides an IEEE-ready, reproducible benchmark for evaluating semantic interoperability strategies in industrial software stacks.
 
-## Project Purpose
+## Contribution
 
-This artifact supports comparative benchmarking under controlled scenario-based evaluation, including:
-- baseline performance,
-- robustness and fault tolerance,
-- mixed requirement suitability,
-- adaptive strategy selection behavior.
+We benchmark adaptive strategy selection under realistic stressors:
+- **Scale**: small, medium, and large workload profiles.
+- **Security modes**: none, auth, encryption, full.
+- **Fault conditions**: missing metadata, schema mismatch, high load, and ambiguous mappings.
 
-## Supported Strategies
-
-- `ontology_based`
-- `direct_translation`
-- `soa`
-- `opcua_mediated`
+Evaluated strategies:
 - `adaptive_selection`
+- `direct_translation`
+- `ontology_based`
+- `opcua_mediated`
+- `soa`
 
-Legacy method labels and benchmark scripts remain available for backward compatibility.
+## Key Results
 
-## Adaptive Selection Concept
+- `adaptive_selection` delivers the best robustness profile under injected faults.
+- `direct_translation` remains the lowest-latency path in latency-first scenarios.
+- `ontology_based` incurs the highest compute and memory cost due to semantic processing overhead.
+- The benchmark quantifies explicit latency/throughput/robustness trade-offs across methods.
 
-`adaptive_selection` is a rule-based policy layer that selects a base strategy according to scenario features (latency sensitivity, semantic complexity, security level, interoperability breadth, fault mode, resource constraints). The `adaptive_auto` policy now applies contextual scoring before selecting, and fallback is used when an initial choice fails.
+## Reproducibility
 
-See `docs/adaptive_selection.md`.
-
-## Execution Modes
-
-### Docker mode
+### Full workflow (recommended)
 ```bash
-docker compose up --build
+docker-compose up --build
 ```
-This command now runs the full workflow end-to-end: simulation campaign, aggregation, statistical analysis, scalability/adaptive comparisons, figure generation, and final report generation.
 
-### Native Python mode
+### Native workflow
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python -m framework_benchmark run --config configs/default.yaml
-python -m framework_benchmark report --input results/raw_runs --output results/final_report.html
+PYTHONPATH=. python scripts/run_all.py
 ```
 
-## Unified CLI
+### Running experiments only
+```bash
+python -m framework_benchmark run --config configs/default.yaml
+```
 
-- Run benchmark: `python -m framework_benchmark run --config configs/default.yaml`
-- Generate report: `python -m framework_benchmark report --input results/raw_runs`
-- List scenario flags: `python -m framework_benchmark scenarios`
-- Validate config: `python -m framework_benchmark validate --config configs/default.yaml`
+### Output locations
+- Raw experiment outputs: `results/raw_runs/`
+- Ablation runs: `results/ablations/`
+- Robustness runs: `results/robustness/`
+- Aggregated statistics: `results/aggregated/`
+- Figures: `results/figures/`
+- Final report: `results/final_report.html`, `results/final_report.md`
 
-## Config Files
+## Repository Structure
 
-- `configs/default.yaml`
-- `configs/adaptive_faults.yaml`
-- `configs/minimal.yaml`
+- `/experiments` (benchmark execution entrypoints via `benchmarks/` and `scripts/`)
+- `/results` (generated outputs)
+- `/plots` (generated publication figures under `results/figures`)
+- `/analysis` (aggregation, statistics, plotting, report generation)
+- `/paper` (submission-facing narrative assets)
 
-Configurable settings include strategies, policies, scales, security modes, scenario flags, repetitions, seeds, and output paths.
+## Figures Overview (1–18)
 
-## Report Generation
-
-The report pipeline extends `results/final_report.html` with publication-oriented sections:
-- Executive summary,
-- benchmark configuration summary,
-- adaptive selection analysis,
-- robustness/fault analysis,
-- trade-off tables,
-- statistical summary,
-- limitations,
-- reproducibility metadata,
-- figure placeholders.
+1. Experiment matrix overview  
+2. Latency distribution by method  
+3. p95 latency comparison  
+4. Throughput comparison  
+5. Throughput vs scale  
+6. Scalability impact on latency  
+7. Scalability impact on resources  
+8. Security overhead on latency  
+9. Security overhead on throughput  
+10. CPU usage by method  
+11. Memory usage by method  
+12. Ablation impact on latency  
+13. Ablation impact on throughput  
+14. Robustness degradation under faults  
+15. Recovery success rate by fault  
+16. Latency confidence intervals (95%)  
+17. Pairwise effect sizes  
+18. Pareto trade-off (latency/throughput/memory)
 
 ## Limitations
 
-This repository does **not** claim full IEEE 1451 or IEC 61499 conformance testing. It implements representative strategy behavior in a virtualized environment.
-
-## Reproducibility Guidance
-
-- Use fixed seed configs (`configs/*.yaml`).
-- Keep raw JSON outputs under `results/raw_runs`.
-- Track environment metadata (`results/environment/*`).
-- Capture git commit hash in generated artifacts.
-
-More details in:
-- `docs/scenarios.md`
-- `docs/reporting.md`
-- `docs/reproducibility.md`
-- `docs/limitations.md`
+- Experiments are executed in a **virtualized testbed**.
+- There is currently **no hardware-in-the-loop validation**.
+- Implementations are standards-informed and do **not claim full standards compliance certification**.

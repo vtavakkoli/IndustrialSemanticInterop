@@ -3,7 +3,7 @@ from .run_trial import run_trial
 from .scenario_matrix import build_scenarios
 from .validate_results import validate_result
 
-FAULTS = ["packet_drop", "malformed_payload", "delayed_downstream", "dependency_restart", "semantic_service_failure", "burst_overload"]
+FAULTS = ["missing_metadata", "schema_mismatch", "high_load", "ambiguous_mapping"]
 
 
 def run_robustness(repetitions: int = 3, output: str = "results/robustness"):

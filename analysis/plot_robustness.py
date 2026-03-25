@@ -29,6 +29,7 @@ def plot_robustness_degradation(path='results/robustness', out='results/figures/
     ax.tick_params(axis='x', rotation=25)
     ax.grid(axis='y', alpha=0.3)
     plt.savefig(out)
+    plt.savefig(out.replace('.png', '.svg'))
     plt.close(fig)
 
 
@@ -48,4 +49,5 @@ def plot_recovery_success(path='results/robustness', out='results/figures/figure
     ax.tick_params(axis='x', rotation=25)
     ax.grid(axis='y', alpha=0.3)
     plt.savefig(out)
+    plt.savefig(out.replace('.png', '.svg'))
     plt.close(fig)

@@ -1,0 +1,18 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Generated benchmark outputs (reproducible, not source-controlled)
+results/raw_runs/
+results/aggregated/
+results/ablations/
+results/robustness/
+results/environment/
+results/figures/*.png
+results/figures/*.svg
+results/final_report.html
+results/final_report.md
+results/manifest.json
+
+# virtual env
+.venv/

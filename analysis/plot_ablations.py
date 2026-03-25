@@ -17,18 +17,21 @@ def plot_ablation_latency(path='results/ablations', out='results/figures/figure_
     rows = _rows(path)
     vals = defaultdict(list)
     for r in rows:
-        key = 'reasoning_on' if r.get('ablation', {}).get('reasoning', True) else 'reasoning_off'
+        key = r.get('ablation', {}).get('variant', 'full_framework')
         vals[key].append(float(r['latency_mean_ms']))
-    labels = sorted(vals)
+    labels = ['full_framework', 'no_adaptive', 'no_fault_handling', 'no_security_awareness']
+    labels = [x for x in labels if x in vals]
     ys = [sum(vals[k]) / max(1, len(vals[k])) for k in labels]
 
     fig, ax = plt.subplots(figsize=(11, 7))
-    ax.bar(labels, ys, color=['#1f77b4', '#ff7f0e'])
+    ax.bar(labels, ys, color=['#1f77b4', '#ff7f0e', '#d62728', '#2ca02c'])
     ax.set_title('Figure 12: Ablation Impact on Latency')
-    ax.set_xlabel('Ablation setting')
+    ax.set_xlabel('Ablation variant')
     ax.set_ylabel('Latency (ms)')
+    ax.tick_params(axis='x', rotation=15)
     ax.grid(axis='y', alpha=0.3)
     plt.savefig(out)
+    plt.savefig(out.replace('.png', '.svg'))
     plt.close(fig)
 
 
@@ -36,16 +39,19 @@ def plot_ablation_throughput(path='results/ablations', out='results/figures/figu
     rows = _rows(path)
     vals = defaultdict(list)
     for r in rows:
-        key = 'cache_on' if r.get('ablation', {}).get('cache', True) else 'cache_off'
+        key = r.get('ablation', {}).get('variant', 'full_framework')
         vals[key].append(float(r['throughput_msg_per_sec']))
-    labels = sorted(vals)
+    labels = ['full_framework', 'no_adaptive', 'no_fault_handling', 'no_security_awareness']
+    labels = [x for x in labels if x in vals]
     ys = [sum(vals[k]) / max(1, len(vals[k])) for k in labels]
 
     fig, ax = plt.subplots(figsize=(11, 7))
-    ax.bar(labels, ys, color=['#2ca02c', '#d62728'])
+    ax.bar(labels, ys, color=['#2ca02c', '#1f77b4', '#d62728', '#9467bd'])
     ax.set_title('Figure 13: Ablation Impact on Throughput')
-    ax.set_xlabel('Ablation setting')
+    ax.set_xlabel('Ablation variant')
     ax.set_ylabel('Throughput (msg/s)')
+    ax.tick_params(axis='x', rotation=15)
     ax.grid(axis='y', alpha=0.3)
     plt.savefig(out)
+    plt.savefig(out.replace('.png', '.svg'))
     plt.close(fig)

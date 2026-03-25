@@ -3,6 +3,14 @@ import time
 
 
 def apply_fault(fault: str, rng: random.Random):
+    if fault == "missing_metadata" and rng.random() < 0.035:
+        return "malformed"
+    if fault == "schema_mismatch" and rng.random() < 0.045:
+        return "semantic_failure"
+    if fault == "high_load" and rng.random() < 0.10:
+        time.sleep(0.0015)
+    if fault == "ambiguous_mapping" and rng.random() < 0.04:
+        return "semantic_failure"
     if fault == "packet_drop" and rng.random() < 0.05:
         return "drop"
     if fault == "malformed_payload" and rng.random() < 0.03:
