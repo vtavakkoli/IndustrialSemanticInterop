@@ -17,6 +17,8 @@ from analysis.report import generate_report
 from analysis.statistics import build_descriptive_stats
 from analysis.stats_analysis import run_stats
 from analysis.validate_figures import validate_readable_text
+from benchmarks.ablation_runner import run_ablations
+from benchmarks.robustness_runner import run_robustness
 from benchmark.runner import run_benchmarks
 
 
@@ -43,7 +45,15 @@ def _write_environment(results_root: str = "results") -> None:
     (env / "git_commit.txt").write_text(commit + "\n", encoding="utf-8")
 
 
-def _run_comprehensive_report_pipeline(results_root: str = "results") -> None:
+def _run_comprehensive_report_pipeline(results_root: str = "results", repetitions: int = 5) -> None:
+    derived_repetitions = max(2, repetitions // 2)
+    _progress(
+        "running ablation and robustness suites for comprehensive figures "
+        f"(repetitions={derived_repetitions})"
+    )
+    run_ablations(repetitions=derived_repetitions, output=f"{results_root}/ablations")
+    run_robustness(repetitions=derived_repetitions, output=f"{results_root}/robustness")
+
     _progress("running comprehensive aggregation/statistics for HTML report")
     rows, _, _ = aggregate_comprehensive(f"{results_root}/raw_runs", f"{results_root}/aggregated")
     run_stats(rows, f"{results_root}/aggregated")
@@ -98,7 +108,7 @@ def main() -> None:
     if args.skip_comprehensive_report:
         _progress("skipping comprehensive HTML report (--skip-comprehensive-report)")
     else:
-        _run_comprehensive_report_pipeline("results")
+        _run_comprehensive_report_pipeline("results", repetitions=args.repetitions)
 
     _progress("pipeline completed successfully")
 

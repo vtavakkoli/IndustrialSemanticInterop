@@ -11,6 +11,8 @@ from analysis.plot_all import plot_all
 from analysis.stats_analysis import run_stats
 from analysis.effect_sizes import compute_effect_sizes
 from analysis.validate_figures import validate_readable_text
+from benchmarks.ablation_runner import run_ablations
+from benchmarks.robustness_runner import run_robustness
 
 from .config import load_config
 from .runner import run_campaign, summarize_records, write_records
@@ -38,6 +40,13 @@ def cmd_run(args) -> None:
     compute_effect_sizes(rows, str(Path(cfg["results"]["aggregated_dir"]) / "effect_sizes.csv"))
     summarize_adaptive_vs_static(rows, cfg["results"]["aggregated_dir"])
     summarize_scalability(rows, cfg["results"]["aggregated_dir"])
+    derived_repetitions = max(2, int(cfg.get("repetitions", 1)) // 2)
+    _log(
+        "[framework_benchmark] running ablation/robustness suites "
+        f"for publication figures (repetitions={derived_repetitions})"
+    )
+    run_ablations(repetitions=derived_repetitions, output="results/ablations")
+    run_robustness(repetitions=derived_repetitions, output="results/robustness")
     plot_all(rows)
     validate_readable_text()
 
