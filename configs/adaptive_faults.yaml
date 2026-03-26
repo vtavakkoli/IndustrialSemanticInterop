@@ -1,0 +1,16 @@
+repetitions: 5
+seed: 5151
+strategies: [adaptive_selection, ontology_based, opcua_mediated]
+policies: [fault_resilient, balanced, security_first]
+scales: [medium, large]
+security_modes: [auth, full]
+scenario_flags:
+  - ontology_service_down
+  - opcua_endpoint_down
+  - authentication_failure
+  - high_load
+  - multi_constraint_mixed
+results:
+  raw_dir: results/raw_runs
+  aggregated_dir: results/aggregated
+  report_html: results/final_report.html

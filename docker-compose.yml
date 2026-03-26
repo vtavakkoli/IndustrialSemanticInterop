@@ -1,0 +1,9 @@
+services:
+  benchmark:
+    build: .
+    image: industrial-semantic-interop-benchmark
+    command: python -m framework_benchmark run --config configs/default.yaml
+    volumes:
+      - ./results:/app/results
+    environment:
+      - PYTHONUNBUFFERED=1
