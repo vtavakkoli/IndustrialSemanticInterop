@@ -11,7 +11,10 @@ def plot_latency_distribution(rows, out='results/figures/figure_02_latency_distr
     methods = sorted({r['method'] for r in rows})
     data = [[float(r['latency_mean_ms']) for r in rows if r['method'] == m] for m in methods]
     fig, ax = plt.subplots(figsize=(11, 7))
-    bp = ax.boxplot(data, labels=methods, patch_artist=True, showmeans=True)
+    # Matplotlib 3.9 renamed ``labels`` to ``tick_labels`` and removed the
+    # deprecated ``labels`` keyword in 3.11. Use the current API so the
+    # publication plots work on the Python 3.12 CI environment.
+    bp = ax.boxplot(data, tick_labels=methods, patch_artist=True, showmeans=True)
     for patch in bp['boxes']:
         patch.set_facecolor('#a6cee3')
     ax.set_title('Figure 02: Latency Distribution by Method')
