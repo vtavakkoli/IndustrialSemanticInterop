@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 def _fallback_generate(fig_dir: Path):
+    """Generate lightweight placeholders only when plotting dependencies are unavailable."""
     from .simple_png import Canvas
 
     names = [
@@ -33,24 +34,37 @@ def plot_all(rows):
         from .plot_robustness import plot_robustness_degradation, plot_recovery_success
         from .plot_statistics import plot_confidence_intervals, plot_effect_sizes
         from .plot_pareto import plot_pareto
-
-        plot_experiment_matrix(rows)
-        plot_latency_distribution(rows)
-        plot_latency_p95(rows)
-        plot_throughput_comparison(rows)
-        plot_throughput_vs_scale(rows)
-        plot_scalability_latency(rows)
-        plot_scalability_resources(rows)
-        plot_security_latency(rows)
-        plot_security_throughput(rows)
-        plot_cpu(rows)
-        plot_memory(rows)
-        plot_ablation_latency()
-        plot_ablation_throughput()
-        plot_robustness_degradation()
-        plot_recovery_success()
-        plot_confidence_intervals()
-        plot_effect_sizes()
-        plot_pareto(rows)
-    except Exception:
+    except ImportError:
+        # Keep the dependency-free fallback for constrained environments, but do
+        # not hide real plotting/API errors behind placeholder figures.
         _fallback_generate(fig_dir)
+        return
+
+    plots = [
+        ('figure_01_experiment_matrix', plot_experiment_matrix, (rows,)),
+        ('figure_02_latency_distribution', plot_latency_distribution, (rows,)),
+        ('figure_03_latency_p95_comparison', plot_latency_p95, (rows,)),
+        ('figure_04_throughput_comparison', plot_throughput_comparison, (rows,)),
+        ('figure_05_throughput_vs_scale', plot_throughput_vs_scale, (rows,)),
+        ('figure_06_scalability_latency', plot_scalability_latency, (rows,)),
+        ('figure_07_scalability_resources', plot_scalability_resources, (rows,)),
+        ('figure_08_security_latency_overhead', plot_security_latency, (rows,)),
+        ('figure_09_security_throughput_overhead', plot_security_throughput, (rows,)),
+        ('figure_10_cpu_usage', plot_cpu, (rows,)),
+        ('figure_11_memory_usage', plot_memory, (rows,)),
+        ('figure_12_ablation_impact_latency', plot_ablation_latency, ()),
+        ('figure_13_ablation_impact_throughput', plot_ablation_throughput, ()),
+        ('figure_14_robustness_degradation', plot_robustness_degradation, ()),
+        ('figure_15_recovery_success', plot_recovery_success, ()),
+        ('figure_16_confidence_intervals', plot_confidence_intervals, ()),
+        ('figure_17_effect_sizes', plot_effect_sizes, ()),
+        ('figure_18_pareto_tradeoff', plot_pareto, (rows,)),
+    ]
+
+    for figure_name, func, args in plots:
+        try:
+            func(*args)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to generate {figure_name} with {func.__module__}.{func.__name__}: {exc}"
+            ) from exc
