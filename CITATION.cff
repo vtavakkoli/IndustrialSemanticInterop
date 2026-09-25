@@ -13,7 +13,7 @@ year: 2026
 license: MIT
 repository-code: "https://github.com/vtavakkoli/IndustrialSemanticInterop"
 preferred-citation:
-  type: conference-paper
+  type: article
   authors:
     - family-names: "Tavakkoli"
       given-names: "Vahid"
@@ -22,5 +22,10 @@ preferred-citation:
     - family-names: "Kyamakya"
       given-names: "Kyandoghere"
   title: "Adaptive Benchmarking of Industrial Semantic Interoperability Strategies under Scale, Security, and Fault Constraints"
+  journal: "Procedia Computer Science"
+  volume: 290
+  start: 699
+  end: 705
   year: 2026
-  notes: "Accepted and Presented at the International Workshop on AI and Mathematical Methods for Real-world Impact (AI2M4RI), in conjunction with the 23rd International Conference on Mobile Systems and Pervasive Computing (MobiSPC), Athens, Greece, August 18–20, 2026."
+  doi: "10.1016/j.procs.2026.08.450"
+  url: "https://www.sciencedirect.com/science/article/pii/S1877050926030863"
