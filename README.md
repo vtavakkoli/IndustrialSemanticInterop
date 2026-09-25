@@ -5,11 +5,11 @@
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/Docker-reproducible-2496ED?logo=docker&logoColor=white)](Dockerfile)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![AI2M4RI @ MobiSPC 2026](https://img.shields.io/badge/AI2M4RI%20%40%20MobiSPC%202026-Accepted%20%26%20Presented-success)](#citation)
+[![Procedia Computer Science](https://img.shields.io/badge/Procedia%20Computer%20Science-Vol.%20290%20%282026%29-success)](#citation)
 
 **IndustrialSemanticInterop** is a reproducible research benchmark for comparing semantic interoperability strategies in industrial software systems. It evaluates how different mediation approaches behave when interoperability is stressed by **scale**, **security overhead**, **semantic ambiguity**, and **fault conditions**, while recording latency, throughput, resource use, robustness, and recovery-oriented metrics.
 
-The repository accompanies the 2026 AI2M4RI/MobiSPC paper listed in the [Citation](#citation) section.
+The repository accompanies the 2026 peer-reviewed article in *Procedia Computer Science* listed in the [Citation](#citation) section.
 
 ## Why this repository exists
 
@@ -191,17 +191,23 @@ pytest -q
 
 If you use this repository, benchmark design, experimental framework, or derived results in academic work, please cite:
 
-> Tavakkoli, V., Mohsenzadegan, K., & Kyamakya, K. (2026). **Adaptive Benchmarking of Industrial Semantic Interoperability Strategies under Scale, Security, and Fault Constraints.** Accepted and Presented at the International Workshop on AI and Mathematical Methods for Real-world Impact (AI2M4RI), in conjunction with the 23rd International Conference on Mobile Systems and Pervasive Computing (MobiSPC), Athens, Greece, August 18–20, 2026.
+> Tavakkoli, V., Mohsenzadegan, K., & Kyamakya, K. (2026). **Adaptive Benchmarking of Industrial Semantic Interoperability Strategies under Scale, Security, and Fault Constraints.** *Procedia Computer Science, 290*, 699–705. https://doi.org/10.1016/j.procs.2026.08.450
+
+[ScienceDirect article](https://www.sciencedirect.com/science/article/pii/S1877050926030863)
 
 ```bibtex
-@inproceedings{tavakkoli2026adaptivebenchmarking,
-  author    = {Tavakkoli, Vahid and Mohsenzadegan, Kabeh and Kyamakya, Kyandoghere},
-  title     = {Adaptive Benchmarking of Industrial Semantic Interoperability Strategies under Scale, Security, and Fault Constraints},
-  booktitle = {International Workshop on AI and Mathematical Methods for Real-world Impact (AI2M4RI), in conjunction with the 23rd International Conference on Mobile Systems and Pervasive Computing (MobiSPC)},
-  address   = {Athens, Greece},
-  year      = {2026},
-  month     = aug,
-  note      = {Accepted and presented, August 18--20, 2026}
+@article{TAVAKKOLI2026699,
+  title   = {Adaptive Benchmarking of Industrial Semantic Interoperability Strategies under Scale, Security, and Fault Constraints},
+  journal = {Procedia Computer Science},
+  volume  = {290},
+  pages   = {699-705},
+  year    = {2026},
+  note    = {21st International Conference on Future Networks and Communications/23rd International Conference on Mobile Systems and Pervasive Computing/16th International Conference on Sustainable Energy Information Technology Proposal},
+  issn    = {1877-0509},
+  doi     = {10.1016/j.procs.2026.08.450},
+  url     = {https://www.sciencedirect.com/science/article/pii/S1877050926030863},
+  author  = {Vahid Tavakkoli and Kabeh Mohsenzadegan and Kyandoghere Kyamakya},
+  keywords = {Industrial interoperability, semantic benchmark, adaptive architecture, OPC UA, Asset Administration Shell, full factorial benchmark, robustness evaluation}
 }
 ```
 
